@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>창의적 체험활동 관리 시스템</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
         .loading {
@@ -25,9 +25,14 @@
     </div>
 
     <script type="text/babel">
+        console.log('Script starting...');
+        
         const { useState } = React;
+        console.log('React loaded:', React);
+        console.log('useState loaded:', useState);
 
         function App() {
+            console.log('App component loading...');
             const [selectedGrade, setSelectedGrade] = useState('3');
             const [viewMode, setViewMode] = useState('table');
             const [selectedMonth, setSelectedMonth] = useState('3');
@@ -863,7 +868,14 @@
         }
 
         // React 앱 렌더링
-        ReactDOM.render(React.createElement(App), document.getElementById('root'));
+        console.log('Rendering App...');
+        try {
+            ReactDOM.render(React.createElement(App), document.getElementById('root'));
+            console.log('App rendered successfully!');
+        } catch (error) {
+            console.error('Render error:', error);
+            document.getElementById('root').innerHTML = '<div style="padding: 20px; color: red;">렌더링 오류: ' + error.message + '</div>';
+        }
     </script>
 </body>
 </html>
