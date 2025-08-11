@@ -4,431 +4,1272 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>창의적 체험활동 관리 시스템</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- Babel for JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Lucide Icons -->
+    <style>
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-size: 18px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <div class="loading">로딩 중...</div>
+    </div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        function App() {
+            const [selectedGrade, setSelectedGrade] = useState('3');
+            const [viewMode, setViewMode] = useState('table');
+            const [selectedMonth, setSelectedMonth] = useState('3');
+            const [searchTerm, setSearchTerm] = useState('');
+            const [showAddForm, setShowAddForm] = useState(false);
+            const [showExcelFormat, setShowExcelFormat] = useState(false);
+            
+            const [newActivity, setNewActivity] = useState({
+                date: '',
+                period: '',
+                domain: '자율',
+                content: '',
+                note: ''
+            });
+
+            const [allActivities, setAllActivities] = useState({
+                '1': [
+                    { id: 101, date: '2025.03.05', period: '5,6', domain: '자율', content: '신입생 오리엔테이션', note: '' },
+                    { id: 102, date: '2025.03.19', period: '5,6', domain: '진로', content: '진로흥미검사', note: '' },
+                    { id: 103, date: '2025.03.26', period: '6,7', domain: '동아리', content: '동아리 조직', note: '' },
+                    { id: 104, date: '2025.04.02', period: '7', domain: '봉사', content: '교내 환경정화', note: '(환경보호활동)' }
+                ],
+                '2': [
+                    { id: 201, date: '2025.03.05', period: '6,7', domain: '자율', content: '학급특색활동 계획', note: '' },
+                    { id: 202, date: '2025.03.12', period: '5,6,7', domain: '진로', content: '진로적성검사', note: '' },
+                    { id: 203, date: '2025.03.26', period: '5,6,7', domain: '동아리', content: '체육동아리 활동', note: '' },
+                    { id: 204, date: '2025.04.02', period: '7', domain: '봉사', content: '후배 멘토링', note: '(교육활동)' }
+                ],
+                '3': [
+                    { id: 1, date: '2025.03.05', period: '6', domain: '자율', content: '생명존중 교육', note: '' },
+                    { id: 2, date: '2025.03.05', period: '7', domain: '자율', content: '학급특색지향활동', note: '' },
+                    { id: 3, date: '2025.03.12', period: '5', domain: '자율', content: '입학식/시업식', note: '입학식/시업식' },
+                    { id: 4, date: '2025.03.19', period: '6,7', domain: '자율', content: '학급특색지향활동', note: '' },
+                    { id: 5, date: '2025.03.26', period: '7', domain: '자율', content: '안전교육', note: '' },
+                    { id: 6, date: '2025.04.09', period: '5,6', domain: '자율', content: '학급특색지향활동', note: '' },
+                    { id: 7, date: '2025.05.14', period: '6', domain: '자율', content: '미세먼지교육', note: '' },
+                    { id: 8, date: '2025.06.25', period: '5', domain: '자율', content: '사이버폭력예방교육', note: '' },
+                    
+                    { id: 9, date: '2025.03.12', period: '5,6,7', domain: '진로', content: '진로 독서지도특화 및 학과별직업활동', note: '' },
+                    { id: 10, date: '2025.03.19', period: '5,6,7', domain: '진로', content: '학과특색진로활동', note: '' },
+                    { id: 11, date: '2025.03.26', period: '5,6', domain: '진로', content: '진로적성검사', note: '' },
+                    { id: 12, date: '2025.04.23', period: '5,6,7', domain: '진로', content: '진로 독서프로젝트', note: '' },
+                    
+                    { id: 13, date: '2025.03.05', period: '5,6', domain: '동아리', content: '동아리 조직', note: '' },
+                    { id: 14, date: '2025.03.19', period: '5,6', domain: '동아리', content: '수학동아리 활동', note: '' },
+                    { id: 15, date: '2025.03.26', period: '5,6,7', domain: '동아리', content: '과학실험동아리', note: '' },
+                    { id: 16, date: '2025.04.16', period: '6,7', domain: '동아리', content: '영어토론동아리', note: '' },
+                    
+                    { id: 17, date: '2025.03.12', period: '7', domain: '봉사', content: '환경정화활동', note: '(환경보호활동)' },
+                    { id: 18, date: '2025.03.26', period: '6', domain: '봉사', content: '교내도서관정리', note: '(교육활동)' },
+                    { id: 19, date: '2025.04.09', period: '7', domain: '봉사', content: '봉사소양교육', note: '(학업보충활동)' },
+                    { id: 20, date: '2025.05.21', period: '5,6,7', domain: '봉사', content: '내외 봉사의 날', note: '(아동복지활동)' }
+                ]
+            });
+
+            const activities = allActivities[selectedGrade] || [];
+            const domains = ['자율', '진로', '동아리', '봉사'];
+            const months = [
+                { value: '3', label: '3월' },
+                { value: '4', label: '4월' },
+                { value: '5', label: '5월' },
+                { value: '6', label: '6월' },
+                { value: '7', label: '7월' },
+                { value: '8', label: '8월' },
+                { value: '9', label: '9월' },
+                { value: '10', label: '10월' },
+                { value: '11', label: '11월' },
+                { value: '12', label: '12월' }
+            ];
+
+            const domainColors = {
+                '자율': 'bg-yellow-100',
+                '진로': 'bg-green-100',
+                '동아리': 'bg-purple-100',
+                '봉사': 'bg-pink-100'
+            };
+
+            // 교시 수 계산
+            const calculatePeriodHours = (period) => {
+                if (!period || period === '') return 0;
+                const periods = period.split(',').map(p => p.trim()).filter(p => p !== '');
+                return periods.length;
+            };
+
+            // 영역별 활동 필터링
+            const getActivitiesByDomain = (domain) => {
+                return activities
+                    .filter(activity => activity.domain === domain)
+                    .filter(activity => 
+                        searchTerm === '' || 
+                        activity.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        activity.date.includes(searchTerm) ||
+                        activity.note.toLowerCase().includes(searchTerm.toLowerCase())
+                    )
+                    .sort((a, b) => new Date(a.date.replace(/\./g, '-')) - new Date(b.date.replace(/\./g, '-')));
+            };
+
+            // 활동 추가
+            const handleAddActivity = () => {
+                if (newActivity.date && newActivity.period && newActivity.content) {
+                    const currentActivities = allActivities[selectedGrade] || [];
+                    const maxId = Math.max(0, ...Object.values(allActivities).flat().map(a => a.id));
+                    const id = maxId + 1;
+                    const updatedActivities = [...currentActivities, { 
+                        ...newActivity, 
+                        id
+                    }];
+                    
+                    setAllActivities({
+                        ...allActivities,
+                        [selectedGrade]: updatedActivities
+                    });
+                    
+                    setNewActivity({ date: '', period: '', domain: '자율', content: '', note: '' });
+                    setShowAddForm(false);
+                }
+            };
+
+            // 활동 삭제
+            const handleDelete = (id) => {
+                const currentActivities = allActivities[selectedGrade] || [];
+                const updatedActivities = currentActivities.filter(activity => activity.id !== id);
+                
+                setAllActivities({
+                    ...allActivities,
+                    [selectedGrade]: updatedActivities
+                });
+            };
+
+            // CSV 템플릿 다운로드
+            const downloadTemplate = () => {
+                const templateData = [
+                    ['날짜', '시간', '교시', '영역', '내용', '비고'],
+                    ['2025.03.04', '2', '1,2', '자율', '입학식/시업식', '입학식/시업식'],
+                    ['2025.03.05', '1', '5', '자율', '학교폭력예방', ''],
+                    ['2025.03.05', '1', '6', '자율', '생명존중 교육', ''],
+                    ['2025.03.12', '3', '5,6,7', '진로', '진로탐색활동', ''],
+                    ['2025.03.19', '2', '6,7', '동아리', '동아리활동', ''],
+                    ['2025.03.26', '1', '7', '봉사', '환경정화활동', '(환경보호활동)']
+                ];
+
+                const csvContent = templateData.map(row => 
+                    row.map(cell => {
+                        const cellStr = String(cell);
+                        if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+                            return `"${cellStr.replace(/"/g, '""')}"`;
+                        }
+                        return cellStr;
+                    }).join(',')
+                ).join('\n');
+
+                const BOM = '\uFEFF';
+                const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `${selectedGrade}학년_창체활동_템플릿.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            // 현재 데이터 다운로드
+            const downloadCurrentData = () => {
+                if (activities.length === 0) {
+                    alert('다운로드할 데이터가 없습니다.');
+                    return;
+                }
+
+                const headers = ['날짜', '시간', '교시', '영역', '내용', '비고'];
+                const csvData = [
+                    headers,
+                    ...activities.map(activity => [
+                        activity.date,
+                        calculatePeriodHours(activity.period),
+                        activity.period,
+                        activity.domain,
+                        activity.content,
+                        activity.note
+                    ])
+                ];
+
+                const csvContent = csvData.map(row => 
+                    row.map(cell => {
+                        const cellStr = String(cell);
+                        if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+                            return `"${cellStr.replace(/"/g, '""')}"`;
+                        }
+                        return cellStr;
+                    }).join(',')
+                ).join('\n');
+
+                const BOM = '\uFEFF';
+                const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `${selectedGrade}학년_창체활동_현재데이터.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            return (
+                <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
+                    <div className="bg-white rounded-lg shadow-lg mb-6 p-6">
+                        <h1 className="text-2xl font-bold text-gray-800 mb-4 text-center">
+                            2025. {selectedGrade}학년 창체 이수시간 입력 안내
+                        </h1>
+                        
+                        {/* 학년 선택 탭 */}
+                        <div className="mb-6">
+                            <div className="flex justify-center">
+                                <div className="flex border-2 border-gray-300 rounded-lg overflow-hidden bg-white">
+                                    {['1', '2', '3'].map(grade => (
+                                        <button
+                                            key={grade}
+                                            onClick={() => setSelectedGrade(grade)}
+                                            className={`px-8 py-3 font-bold text-lg transition-colors ${
+                                                selectedGrade === grade
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                                            }`}
+                                        >
+                                            {grade}학년
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 보기 모드 선택 탭 */}
+                        <div className="mb-6">
+                            <div className="flex justify-center">
+                                <div className="flex border-2 border-gray-300 rounded-lg overflow-hidden bg-white">
+                                    <button
+                                        onClick={() => setViewMode('table')}
+                                        className={`px-6 py-2 font-medium transition-colors ${
+                                            viewMode === 'table'
+                                                ? 'bg-green-600 text-white'
+                                                : 'bg-white text-gray-700 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        📋 관리 모드
+                                    </button>
+                                    <button
+                                        onClick={() => setViewMode('schedule')}
+                                        className={`px-6 py-2 font-medium transition-colors ${
+                                            viewMode === 'schedule'
+                                                ? 'bg-green-600 text-white'
+                                                : 'bg-white text-gray-700 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        📅 시간표 보기
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 조건부 렌더링 */}
+                    {viewMode === 'schedule' ? (
+                        <div className="bg-white rounded-lg shadow-lg p-6">
+                            <h2 className="text-xl font-bold mb-4">
+                                {selectedGrade}학년 {selectedMonth}월 창의적 체험활동 시간표
+                            </h2>
+                            <div className="text-center py-12">
+                                <div className="text-6xl mb-4">📅</div>
+                                <h3 className="text-lg font-medium text-gray-500 mb-2">시간표 보기 모드</h3>
+                                <p className="text-gray-400">월별 시간표가 여기에 표시됩니다.</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div>
+                            {/* 상단 도구 모음 */}
+                            <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+                                <div className="flex flex-wrap gap-4 items-center justify-between">
+                                    <div className="flex gap-4 items-center">
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-3 text-gray-400">🔍</span>
+                                            <input
+                                                type="text"
+                                                placeholder="활동내용 검색..."
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                                className="w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                                            />
+                                        </div>
+                                        
+                                        <button
+                                            onClick={() => setShowAddForm(!showAddForm)}
+                                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                                        >
+                                            ➕ 활동 추가
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="flex gap-2">
+                                        <button 
+                                            onClick={downloadTemplate}
+                                            className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+                                        >
+                                            📄 CSV 템플릿
+                                        </button>
+                                        <button 
+                                            onClick={downloadCurrentData}
+                                            className="px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                                        >
+                                            📥 현재 데이터
+                                        </button>
+                                        <button
+                                            onClick={() => setShowExcelFormat(!showExcelFormat)}
+                                            className="px-3 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
+                                        >
+                                            ℹ️ 형식 안내
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* 파일 형식 안내 */}
+                                {showExcelFormat && (
+                                    <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded">
+                                        <h3 className="font-bold mb-3 text-blue-800">📊 파일 형식 안내</h3>
+                                        <div className="text-sm text-blue-700 space-y-2">
+                                            <p><strong>지원 파일:</strong> Excel (.xlsx, .xls), CSV (.csv)</p>
+                                            <p><strong>필수 컬럼:</strong> 날짜, 시간, 교시, 영역, 내용</p>
+                                            <p><strong>선택 컬럼:</strong> 비고</p>
+                                            <div className="mt-3">
+                                                <p className="font-semibold mb-2">컬럼명 예시:</p>
+                                                <div className="bg-white p-2 rounded border text-xs font-mono">
+                                                    <div className="grid grid-cols-6 gap-2 font-bold border-b pb-1">
+                                                        <span>날짜</span>
+                                                        <span>시간</span>
+                                                        <span>교시</span>
+                                                        <span>영역</span>
+                                                        <span>내용</span>
+                                                        <span>비고</span>
+                                                    </div>
+                                                    <div className="grid grid-cols-6 gap-2 pt-1">
+                                                        <span>2025.03.05</span>
+                                                        <span>2</span>
+                                                        <span>5,6</span>
+                                                        <span>자율</span>
+                                                        <span>학급특색활동</span>
+                                                        <span></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 활동 추가 폼 */}
+                                {showAddForm && (
+                                    <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
+                                        <h3 className="font-bold mb-3">새 활동 추가</h3>
+                                        <div className="grid grid-cols-6 gap-3 mb-3">
+                                            <div>
+                                                <label className="block text-xs font-medium mb-1">날짜</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="2025.03.05"
+                                                    value={newActivity.date}
+                                                    onChange={(e) => setNewActivity({...newActivity, date: e.target.value})}
+                                                    className="w-full px-2 py-1 border rounded text-sm"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium mb-1">교시</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="5,6,7"
+                                                    value={newActivity.period}
+                                                    onChange={(e) => setNewActivity({...newActivity, period: e.target.value})}
+                                                    className="w-full px-2 py-1 border rounded text-sm"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium mb-1">영역</label>
+                                                <select
+                                                    value={newActivity.domain}
+                                                    onChange={(e) => setNewActivity({...newActivity, domain: e.target.value})}
+                                                    className="w-full px-2 py-1 border rounded text-sm"
+                                                >
+                                                    {domains.map(domain => (
+                                                        <option key={domain} value={domain}>{domain}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="col-span-3">
+                                                <label className="block text-xs font-medium mb-1">내용</label>
+                                                <input
+                                                    type="text"
+                                                    value={newActivity.content}
+                                                    onChange={(e) => setNewActivity({...newActivity, content: e.target.value})}
+                                                    className="w-full px-2 py-1 border rounded text-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3 mb-3">
+                                            <div>
+                                                <label className="block text-xs font-medium mb-1">비고</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="(학업보충활동)"
+                                                    value={newActivity.note}
+                                                    onChange={(e) => setNewActivity({...newActivity, note: e.target.value})}
+                                                    className="w-full px-2 py-1 border rounded text-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end gap-2">
+                                            <button
+                                                onClick={handleAddActivity}
+                                                className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                                            >
+                                                추가
+                                            </button>
+                                            <button
+                                                onClick={() => setShowAddForm(false)}
+                                                className="px-4 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
+                                            >
+                                                취소
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 영역별 테이블 */}
+                            <div className="space-y-8">
+                                {domains.map(domain => {
+                                    const domainActivities = getActivitiesByDomain(domain);
+                                    return (
+                                        <div key={domain} className="bg-white rounded-lg shadow-lg p-6">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <h2 className={`text-lg font-bold p-3 rounded ${domainColors[domain]} border`}>
+                                                    【{domain}】
+                                                </h2>
+                                                <span className="text-sm text-gray-600">
+                                                    총 {domainActivities.length}개 활동, {domainActivities.reduce((sum, a) => sum + calculatePeriodHours(a.period), 0)}시간
+                                                </span>
+                                            </div>
+                                            
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full border-collapse border border-gray-400 text-sm">
+                                                    <thead>
+                                                        <tr className={domainColors[domain]}>
+                                                            <th className="border border-gray-400 px-2 py-2 font-bold w-24">날짜</th>
+                                                            <th className="border border-gray-400 px-2 py-2 font-bold w-16">시간</th>
+                                                            <th className="border border-gray-400 px-2 py-2 font-bold w-20">교시</th>
+                                                            <th className="border border-gray-400 px-2 py-2 font-bold">내용</th>
+                                                            <th className="border border-gray-400 px-2 py-2 font-bold w-32">비고</th>
+                                                            <th className="border border-gray-400 px-2 py-2 font-bold w-16">작업</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {domainActivities.length === 0 ? (
+                                                            <tr>
+                                                                <td colSpan="6" className="border border-gray-300 px-2 py-4 text-center text-gray-500">
+                                                                    등록된 활동이 없습니다.
+                                                                </td>
+                                                            </tr>
+                                                        ) : (
+                                                            domainActivities.map((activity) => (
+                                                                <tr key={activity.id} className="hover:bg-gray-50">
+                                                                    <td className="border border-gray-300 px-2 py-1 text-center">
+                                                                        {activity.date}
+                                                                    </td>
+                                                                    <td className="border border-gray-300 px-2 py-1 text-center">
+                                                                        {calculatePeriodHours(activity.period)}
+                                                                    </td>
+                                                                    <td className="border border-gray-300 px-2 py-1 text-center">
+                                                                        {activity.period}
+                                                                    </td>
+                                                                    <td className="border border-gray-300 px-2 py-1">
+                                                                        {activity.content}
+                                                                    </td>
+                                                                    <td className="border border-gray-300 px-2 py-1 text-red-600">
+                                                                        {activity.note}
+                                                                    </td>
+                                                                    <td className="border border-gray-300 px-2 py-1 text-center">
+                                                                        <button
+                                                                            onClick={() => handleDelete(activity.id)}
+                                                                            className="text-red-600 hover:text-red-800 text-xs"
+                                                                        >
+                                                                            ❌
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            ))
+                                                        )}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* 하단 요약 정보 */}
+                            <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
+                                <div className="grid grid-cols-4 gap-4 text-center">
+                                    {domains.map(domain => {
+                                        const domainActivities = getActivitiesByDomain(domain);
+                                        const totalHours = domainActivities.reduce((sum, a) => sum + calculatePeriodHours(a.period), 0);
+                                        return (
+                                            <div key={domain} className={`p-3 rounded border ${domainColors[domain]}`}>
+                                                <h3 className="font-bold">{domain}</h3>
+                                                <p className="text-sm">{domainActivities.length}개 활동</p>
+                                                <p className="text-lg font-bold">{totalHours}시간</p>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // React 앱 렌더링
+        ReactDOM.render(React.createElement(App), document.getElementById('root'));
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>창의적 체험활동 관리 시스템</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <!-- SheetJS for Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
-        const { Calendar, Clock, BookOpen, Users, Heart, Search, Filter, Edit3, Save, Plus, X, Download, Upload, FileText, AlertCircle, Trash2, RotateCcw } = lucide;
+        const { useState } = React;
+        const { Plus, Download, Upload, FileText, X, Calendar, Search, AlertCircle } = lucide;
 
-        const CreativeActivitySystem = () => {
-          const [selectedGrade, setSelectedGrade] = useState('3');
-          const [allActivities, setAllActivities] = useState({
-            '1': [
-              // 1학년 자율 활동
-              { id: 101, date: '2025.03.05', time: 2, period: '5,6', domain: '자율', content: '신입생 오리엔테이션', note: '' },
-              { id: 102, date: '2025.03.12', time: 1, period: '7', domain: '자율', content: '학급조직 및 임원선출', note: '' },
-              { id: 103, date: '2025.04.09', time: 2, period: '6,7', domain: '자율', content: '생활규정 교육', note: '' },
-              { id: 104, date: '2025.05.14', time: 1, period: '6', domain: '자율', content: '진로탐색 교육', note: '' },
-              // 1학년 진로 활동
-              { id: 105, date: '2025.03.19', time: 2, period: '5,6', domain: '진로', content: '진로흥미검사', note: '' },
-              { id: 106, date: '2025.04.23', time: 3, period: '5,6,7', domain: '진로', content: '직업세계 이해', note: '' },
-              { id: 107, date: '2025.05.15', time: 2, period: '5,6', domain: '진로', content: '진로체험활동', note: '' },
-              // 1학년 동아리 활동
-              { id: 108, date: '2025.03.26', time: 2, period: '6,7', domain: '동아리', content: '동아리 조직', note: '' },
-              { id: 109, date: '2025.04.16', time: 3, period: '5,6,7', domain: '동아리', content: '학술동아리 활동', note: '' },
-              { id: 110, date: '2025.05.21', time: 2, period: '6,7', domain: '동아리', content: '예술동아리 활동', note: '' },
-              // 1학년 봉사 활동
-              { id: 111, date: '2025.04.02', time: 1, period: '7', domain: '봉사', content: '교내 환경정화', note: '(환경보호활동)' },
-              { id: 112, date: '2025.05.07', time: 2, period: '6,7', domain: '봉사', content: '지역사회 봉사', note: '(지역사회활동)' },
-              { id: 113, date: '2025.06.11', time: 1, period: '7', domain: '봉사', content: '교내 도서관 정리', note: '(교육활동)' }
-            ],
-            '2': [
-              // 2학년 자율 활동
-              { id: 201, date: '2025.03.05', time: 2, period: '6,7', domain: '자율', content: '학급특색활동 계획', note: '' },
-              { id: 202, date: '2025.03.19', time: 1, period: '6', domain: '자율', content: '안전교육', note: '' },
-              { id: 203, date: '2025.04.09', time: 3, period: '5,6,7', domain: '자율', content: '민주시민교육', note: '' },
-              { id: 204, date: '2025.05.14', time: 2, period: '6,7', domain: '자율', content: '리더십 교육', note: '' },
-              // 2학년 진로 활동
-              { id: 205, date: '2025.03.12', time: 3, period: '5,6,7', domain: '진로', content: '진로적성검사', note: '' },
-              { id: 206, date: '2025.04.23', time: 2, period: '5,6', domain: '진로', content: '대학탐방', note: '' },
-              { id: 207, date: '2025.05.15', time: 3, period: '5,6,7', domain: '진로', content: '직업인 특강', note: '' },
-              // 2학년 동아리 활동
-              { id: 208, date: '2025.03.26', time: 3, period: '5,6,7', domain: '동아리', content: '체육동아리 활동', note: '' },
-              { id: 209, date: '2025.04.16', time: 2, period: '6,7', domain: '동아리', content: '과학실험동아리', note: '' },
-              { id: 210, date: '2025.05.21', time: 3, period: '5,6,7', domain: '동아리', content: '문학동아리 활동', note: '' },
-              // 2학년 봉사 활동
-              { id: 211, date: '2025.04.02', time: 1, period: '7', domain: '봉사', content: '후배 멘토링', note: '(교육활동)' },
-              { id: 212, date: '2025.05.07', time: 2, period: '6,7', domain: '봉사', content: '복지관 봉사', note: '(복지활동)' },
-              { id: 213, date: '2025.06.11', time: 1, period: '7', domain: '봉사', content: '캠페인 활동', note: '(캠페인활동)' }
-            ],
-            '3': [
-              // 3학년 자율 활동
-              { id: 1, date: '2025.03.05', time: 1, period: '6', domain: '자율', content: '생명존중 교육', note: '' },
-              { id: 2, date: '2025.03.05', time: 1, period: '7', domain: '자율', content: '학급특색지향활동', note: '' },
-              { id: 3, date: '2025.03.12', time: 1, period: '5', domain: '자율', content: '입학식/시업식', note: '입학식/시업식' },
-              { id: 4, date: '2025.03.19', time: 2, period: '6,7', domain: '자율', content: '학급특색지향활동', note: '' },
-              { id: 5, date: '2025.03.26', time: 1, period: '7', domain: '자율', content: '안전교육', note: '' },
-              
-              { id: 6, date: '2025.04.09', time: 2, period: '5,6', domain: '자율', content: '학급특색지향활동', note: '' },
-              { id: 7, date: '2025.04.09', time: 2, period: '6', domain: '자율', content: '진로집단상담 및 진로체험학습교육', note: '' },
-              { id: 8, date: '2025.05.14', time: 3, period: '6', domain: '자율', content: '미세먼지교육', note: '' },
-              { id: 9, date: '2025.05.14', time: 3, period: '7', domain: '자율', content: '장애이해교육', note: '' },
-              { id: 10, date: '2025.05.15', time: 2, period: '1,2', domain: '자율', content: '체육한마당', note: '' },
-              { id: 11, date: '2025.05.16', time: 2, period: '1,2', domain: '자율', content: '현장체험학습', note: '' },
-              { id: 12, date: '2025.06.11', time: 2, period: '5', domain: '자율', content: '성교육', note: '' },
-              { id: 13, date: '2025.06.11', time: 2, period: '6', domain: '자율', content: '교육활동 종례해설교육', note: '' },
-              { id: 14, date: '2025.06.25', time: 3, period: '5', domain: '자율', content: '사이버폭력예방교육', note: '' },
-              { id: 15, date: '2025.06.25', time: 3, period: '6', domain: '자율', content: '통일, 융공어어 등 역량 신장을 위한교육', note: '' },
-              { id: 16, date: '2025.06.25', time: 3, period: '7', domain: '자율', content: '창의인재교육', note: '' },
-              
-              // 3학년 진로 활동
-              { id: 17, date: '2025.03.12', time: 3, period: '5,6,7', domain: '진로', content: '진로 독서지도특화 및 학과별직업활동', note: '' },
-              { id: 18, date: '2025.03.19', time: 3, period: '5,6,7', domain: '진로', content: '학과특색진로활동', note: '' },
-              { id: 19, date: '2025.03.26', time: 2, period: '5,6', domain: '진로', content: '진로적성검사', note: '' },
-              
-              { id: 20, date: '2025.04.23', time: 3, period: '5,6,7', domain: '진로', content: '진로 독서프로젝트', note: '' },
-              { id: 21, date: '2025.05.15', time: 1, period: '5', domain: '진로', content: '체육한마당', note: '' },
-              { id: 22, date: '2025.05.16', time: 1, period: '5', domain: '진로', content: '현장체험학습', note: '' },
-              { id: 23, date: '2025.08.20', time: 3, period: '5,6,7', domain: '진로', content: '미세먼지 수족혈관(구주행정청)', note: '' },
-              
-              // 3학년 동아리 활동
-              { id: 24, date: '2025.03.05', time: 2, period: '5,6', domain: '동아리', content: '동아리 조직', note: '' },
-              { id: 25, date: '2025.03.19', time: 2, period: '5,6', domain: '동아리', content: '수학동아리 활동', note: '' },
-              { id: 26, date: '2025.03.26', time: 3, period: '5,6,7', domain: '동아리', content: '과학실험동아리', note: '' },
-              
-              { id: 27, date: '2025.04.16', time: 2, period: '6,7', domain: '동아리', content: '영어토론동아리', note: '' },
-              { id: 28, date: '2025.05.21', time: 3, period: '5,6,7', domain: '동아리', content: '진로탐구동아리', note: '' },
-              { id: 29, date: '2025.06.18', time: 2, period: '6,7', domain: '동아리', content: '창의융합동아리', note: '' },
-              
-              // 3학년 봉사 활동
-              { id: 30, date: '2025.03.12', time: 1, period: '7', domain: '봉사', content: '환경정화활동', note: '(환경보호활동)' },
-              { id: 31, date: '2025.03.26', time: 1, period: '6', domain: '봉사', content: '교내도서관정리', note: '(교육활동)' },
-              
-              { id: 32, date: '2025.04.09', time: 1, period: '7', domain: '봉사', content: '봉사소양교육', note: '(학업보충활동)' },
-              { id: 33, date: '2025.05.15', time: 2, period: '6,7', domain: '봉사', content: '체육만한국당과 주변 정화활동', note: '(학업보충활동)' },
-              { id: 34, date: '2025.05.16', time: 2, period: '6,7', domain: '봉사', content: '현장체험학습교과 주변 정화활동', note: '(학업보충활동)' },
-              { id: 35, date: '2025.05.21', time: 3, period: '5,6,7', domain: '봉사', content: '내외 봉사의 날', note: '(아동복지활동)' },
-              { id: 36, date: '2025.06.11', time: 1, period: '7', domain: '봉사', content: '학교 주변 정화활동', note: '(학업보충활동)' },
-              { id: 37, date: '2025.07.15', time: 3, period: '5,6,7', domain: '봉사', content: '내외 봉사의 날', note: '(아동복지활동)' },
-              { id: 38, date: '2025.08.27', time: 1, period: '7', domain: '봉사', content: '학교 주변 정화활동', note: '(학업보충활동)' },
-              { id: 39, date: '2025.09.17', time: 1, period: '7', domain: '봉사', content: '학교 주변 정화활동', note: '(학업보충활동)' }
-            ]
-          });
-
-          const activities = allActivities[selectedGrade] || [];
-          const [searchTerm, setSearchTerm] = useState('');
-          const [editingCell, setEditingCell] = useState(null);
-          const [showAddForm, setShowAddForm] = useState(false);
-          const [showExcelFormat, setShowExcelFormat] = useState(false);
-          const [viewMode, setViewMode] = useState('table'); // 'table' 또는 'schedule'
-          const [selectedMonth, setSelectedMonth] = useState('3');
-
-          const [uploadProgress, setUploadProgress] = useState(false);
-
-          const [newActivity, setNewActivity] = useState({
-            date: '',
-            time: '',
-            period: '',
-            domain: '자율',
-            content: '',
-            note: ''
-          });
-
-          const grades = ['1', '2', '3'];
-          const months = [
-            { value: '3', label: '3월' },
-            { value: '4', label: '4월' },
-            { value: '5', label: '5월' },
-            { value: '6', label: '6월' },
-            { value: '7', label: '7월' },
-            { value: '8', label: '8월' },
-            { value: '9', label: '9월' },
-            { value: '10', label: '10월' },
-            { value: '11', label: '11월' },
-            { value: '12', label: '12월' }
-          ];
-          const domains = ['자율', '진로', '동아리', '봉사'];
-          const domainColors = {
-            '자율': 'bg-yellow-100',
-            '진로': 'bg-green-100', 
-            '동아리': 'bg-purple-100',
-            '봉사': 'bg-pink-100'
-          };
-
-          // 교시 수 계산 함수 (예: "5,6,7" → 3시간)
-          const calculatePeriodHours = (period) => {
-            if (!period || period === '') return 0;
-            const periods = period.split(',').map(p => p.trim()).filter(p => p !== '');
-            return periods.length;
-          };
-
-          // 월별 시간표 데이터 생성
-          const generateMonthlySchedule = () => {
-            // 현재 선택된 학년의 활동들 가져오기
-            const currentActivities = allActivities[selectedGrade] || [];
+        function App() {
+            const [selectedGrade, setSelectedGrade] = useState('3');
+            const [viewMode, setViewMode] = useState('table');
+            const [selectedMonth, setSelectedMonth] = useState('3');
+            const [searchTerm, setSearchTerm] = useState('');
+            const [showAddForm, setShowAddForm] = useState(false);
+            const [showExcelFormat, setShowExcelFormat] = useState(false);
             
-            // 선택된 월의 활동들만 필터링 (더 유연한 방식)
-            const monthActivities = currentActivities.filter(activity => {
-              const activityMonth = activity.date.split('.')[1];
-              // 다양한 형태의 월 비교: "3", "03", "03" 등
-              const normalizedActivityMonth = parseInt(activityMonth, 10).toString();
-              const normalizedSelectedMonth = parseInt(selectedMonth, 10).toString();
-              return normalizedActivityMonth === normalizedSelectedMonth;
+            const [newActivity, setNewActivity] = useState({
+                date: '',
+                period: '',
+                domain: '자율',
+                content: '',
+                note: ''
             });
 
-            // 날짜별로 그룹화
-            const groupedByDate = monthActivities.reduce((groups, activity) => {
-              const date = activity.date;
-              if (!groups[date]) {
-                groups[date] = {};
-              }
-              
-              // 교시별로 정리
-              const periods = activity.period.split(',').map(p => p.trim());
-              periods.forEach(period => {
-                if (!groups[date][period]) {
-                  groups[date][period] = [];
-                }
-                groups[date][period].push({
-                  domain: activity.domain,
-                  content: activity.content,
-                  time: calculatePeriodHours(activity.period)
-                });
-              });
-              
-              return groups;
-            }, {});
-
-            return groupedByDate;
-          };
-
-          // 월별 시간표 컴포넌트
-          const MonthlyScheduleView = () => {
-            const scheduleData = generateMonthlySchedule();
-            const dates = Object.keys(scheduleData).sort();
-            const periods = ['1', '2', '3', '4', '5', '6', '7'];
-
-            if (dates.length === 0) {
-              return React.createElement('div', { className: "text-center py-12" },
-                React.createElement(Calendar, { className: "w-16 h-16 text-gray-300 mx-auto mb-4" }),
-                React.createElement('h3', { className: "text-lg font-medium text-gray-500 mb-2" }, `${selectedMonth}월 활동이 없습니다`),
-                React.createElement('p', { className: "text-gray-400" }, "해당 월에 등록된 창의적 체험활동이 없습니다.")
-              );
-            }
-
-            return React.createElement('div', { className: "space-y-6" },
-              React.createElement('div', { className: "flex justify-between items-center" },
-                React.createElement('h2', { className: "text-xl font-bold" }, `${selectedGrade}학년 ${selectedMonth}월 창의적 체험활동 시간표`),
-                React.createElement('select', {
-                  value: selectedMonth,
-                  onChange: (e) => setSelectedMonth(e.target.value),
-                  className: "px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-                }, months.map(month => 
-                  React.createElement('option', { key: month.value, value: month.value }, month.label)
-                ))
-              ),
-              React.createElement('div', { className: "overflow-x-auto" },
-                React.createElement('table', { className: "w-full border-collapse border border-gray-400 text-sm" },
-                  React.createElement('thead', null,
-                    React.createElement('tr', { className: "bg-gray-200" },
-                      React.createElement('th', { className: "border border-gray-400 px-3 py-2 font-bold w-32" }, "날짜"),
-                      periods.map(period => 
-                        React.createElement('th', { key: period, className: "border border-gray-400 px-3 py-2 font-bold w-24" }, `${period}교시`)
-                      )
-                    )
-                  ),
-                  React.createElement('tbody', null,
-                    dates.map(date => 
-                      React.createElement('tr', { key: date, className: "hover:bg-gray-50" },
-                        React.createElement('td', { className: "border border-gray-400 px-3 py-3 font-medium bg-gray-100 text-center" },
-                          React.createElement('div', { className: "text-sm font-bold" }, date),
-                          React.createElement('div', { className: "text-xs text-gray-600" }, 
-                            new Date(date.replace(/\./g, '-')).toLocaleDateString('ko-KR', { weekday: 'short' })
-                          )
-                        ),
-                        periods.map(period => {
-                          const periodActivities = scheduleData[date][period] || [];
-                          return React.createElement('td', { key: period, className: "border border-gray-400 px-2 py-1 text-center" },
-                            periodActivities.length > 0 
-                              ? React.createElement('div', { className: "space-y-1" },
-                                  periodActivities.map((activity, idx) => 
-                                    React.createElement('div', {
-                                      key: idx,
-                                      className: `px-2 py-1 rounded text-xs font-medium border ${domainColors[activity.domain]} ${
-                                        activity.domain === '자율' ? 'text-yellow-800' :
-                                        activity.domain === '진로' ? 'text-green-800' :
-                                        activity.domain === '동아리' ? 'text-purple-800' :
-                                        'text-pink-800'
-                                      }`
-                                    },
-                                      React.createElement('div', { className: "font-bold" }, activity.domain),
-                                      React.createElement('div', { className: "text-xs mt-1 leading-tight" },
-                                        activity.content.length > 10 
-                                          ? `${activity.content.substring(0, 10)}...`
-                                          : activity.content
-                                      ),
-                                      React.createElement('div', { className: "text-xs text-gray-600" }, `(${activity.time}h)`)
-                                    )
-                                  )
-                                )
-                              : React.createElement('div', { className: "text-gray-300 text-xs" }, "-")
-                          );
-                        })
-                      )
-                    )
-                  )
-                )
-              ),
-              React.createElement('div', { className: "mt-6 p-4 bg-gray-100 border rounded" },
-                React.createElement('h3', { className: "font-bold mb-3" }, `${selectedMonth}월 활동 통계`),
-                React.createElement('div', { className: "grid grid-cols-4 gap-4 text-center" },
-                  domains.map(domain => {
-                    const domainActivities = activities.filter(a => {
-                      const activityMonth = a.date.split('.')[1];
-                      const normalizedActivityMonth = parseInt(activityMonth, 10).toString();
-                      const normalizedSelectedMonth = parseInt(selectedMonth, 10).toString();
-                      return normalizedActivityMonth === normalizedSelectedMonth && a.domain === domain;
-                    });
-                    const totalHours = domainActivities.reduce((sum, a) => sum + calculatePeriodHours(a.period), 0);
-                    return React.createElement('div', { key: domain, className: `p-3 rounded border ${domainColors[domain]}` },
-                      React.createElement('h4', { className: "font-bold" }, domain),
-                      React.createElement('p', { className: "text-sm" }, `${domainActivities.length}개 활동`),
-                      React.createElement('p', { className: "text-lg font-bold" }, `${totalHours}시간`)
-                    );
-                  })
-                )
-              )
-            );
-          };
-
-          // 영역별로 활동 필터링
-          const getActivitiesByDomain = (domain) => {
-            return activities
-              .filter(activity => activity.domain === domain)
-              .filter(activity => 
-                searchTerm === '' || 
-                activity.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                activity.date.includes(searchTerm) ||
-                activity.note.toLowerCase().includes(searchTerm.toLowerCase())
-              )
-              .sort((a, b) => new Date(a.date.replace(/\./g, '-')) - new Date(b.date.replace(/\./g, '-')));
-          };
-
-          // 활동 추가
-          const handleAddActivity = () => {
-            if (newActivity.date && newActivity.period && newActivity.content) {
-              const currentActivities = allActivities[selectedGrade] || [];
-              const maxId = Math.max(0, ...Object.values(allActivities).flat().map(a => a.id));
-              const id = maxId + 1;
-              const updatedActivities = [...currentActivities, { 
-                ...newActivity, 
-                id, 
-                time: parseInt(newActivity.time) || 1 
-              }];
-              
-              setAllActivities({
-                ...allActivities,
-                [selectedGrade]: updatedActivities
-              });
-              
-              setNewActivity({ date: '', time: '', period: '', domain: '자율', content: '', note: '' });
-              setShowAddForm(false);
-            }
-          };
-
-          // 셀 편집
-          const handleCellEdit = (id, field, value) => {
-            const currentActivities = allActivities[selectedGrade] || [];
-            const updatedActivities = currentActivities.map(activity =>
-              activity.id === id ? { ...activity, [field]: value } : activity
-            );
-            
-            setAllActivities({
-              ...allActivities,
-              [selectedGrade]: updatedActivities
-            });
-            
-            setEditingCell(null);
-          };
-
-          // 활동 삭제
-          const handleDelete = (id) => {
-            const currentActivities = allActivities[selectedGrade] || [];
-            const updatedActivities = currentActivities.filter(activity => activity.id !== id);
-            
-            setAllActivities({
-              ...allActivities,
-              [selectedGrade]: updatedActivities
-            });
-          };
-
-          // 파일 업로드 처리 (CSV와 엑셀 모두 지원)
-          const handleFileUpload = async (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            setUploadProgress(true);
-            
-            try {
-              let jsonData = [];
-              
-              if (file.name.endsWith('.csv')) {
-                // CSV 파일 처리 - 개선된 파싱
-                const text = await file.text();
-                const lines = text.split('\n').filter(line => line.trim());
-                
-                if (lines.length < 2) {
-                  alert('CSV 파일에 데이터가 없습니다.');
-                  return;
-                }
-
-                // 첫 번째 줄에서 헤더 추출
-                const headerLine = lines[0];
-                const headers = [];
-                let currentField = '';
-                let inQuotes = false;
-                
-                for (let i = 0; i < headerLine.length; i++) {
-                  const char = headerLine[i];
-                  if (char === '"') {
-                    inQuotes = !inQuotes;
-                  } else if (char === ',' && !inQuotes) {
-                    headers.push(currentField.trim());
-                    currentField = '';
-                  } else {
-                    currentField += char;
-                  }
-                }
-                headers.push(currentField.trim());
-
-                // 데이터 행 처리
-                for (let i = 1; i < lines.length; i++) {
-                  const line = lines[i];
-                  const values = [];
-                  let currentValue = '';
-                  let inQuotes = false;
-                  
-                  for (let j = 0; j < line.length; j++) {
-                    const char = line[j];
-                    if (char === '"') {
-                      inQuotes = !inQuotes;
-                    } else if (char === ',' && !inQuotes) {
-                      values.push(currentValue.trim());
-                      currentValue = '';
-                    } else {
-                      currentValue += char;
-                    }
-                  }
-                  values.push(currentValue.trim());
-
-                  // 행 데이터를 객체로 변환
-                  const row = {};
-                  headers.forEach((header, index) => {
-                    row[header] = values[index] || '';
-                  });
-                  
-                  if (Object.values(row).some(val => val.trim())) {
+            const [allActivities, setAllActivities] = useState({
+                '1': [
+                    { id: 101, date: '2025.03.05', period: '5,6', domain: '자율', content: '신입생 오리엔테이션', note: '' },
+                    { id: 102, date: '2025.03.19', period: '5,6', domain: '진로', content: '진로흥미검사', note: '' },
+                    { id: 103, date: '2025.03.26', period: '6,7', domain: '동아리', content: '동아리 조직', note: '' },
+                    { id: 104, date: '2025.04.02', period: '7', domain: '봉사', content: '교내 환경정화', note: '(환경보호활동)' }
+                ],
+                '2': [
+                    { id: 201, date: '2025.03.05', period: '6,7', domain: '자율', content: '학급특색활동 계획', note: '' },
+                    { id: 202, date: '2025.03.12', period: '5,6,7', domain: '진로', content: '진로적성검사', note: '' },
+                    { id: 203, date: '2025.03.26', period: '5,6,7', domain: '동아리', content: '체육동아리 활동', note: '' },
+                    { id: 204, date: '2025.04.02', period: '7', domain: '봉사', content: '후배 멘토링', note: '(교육활동)' }
+                ],
+                '3': [
+                    { id: 1, date: '2025.03.05', period: '6', domain: '자율', content: '생명존중 교육', note: '' },
+                    { id: 2, date: '2025.03.05', period: '7', domain: '자율', content: '학급특색지향활동', note: '' },
+                    { id: 3, date: '2025.03.12', period: '5', domain: '자율', content: '입학식/시업식', note: '입학식/시업식' },
+                    { id: 4, date: '2025.03.19', period: '6,7', domain: '자율', content: '학급특색지향활동', note: '' },
+                    { id: 5, date: '2025.03.26', period: '7', domain: '자율', content: '안전교육', note: '' },
+                    { id: 6, date: '2025.04.09', period: '5,6', domain: '자율', content: '학급특색지향활동', note: '' },
+                    { id: 7, date: '2025.05.14', period: '6', domain: '자율', content: '미세먼지교육', note: '' },
+                    { id: 8, date: '2025.06.25', period: '5', domain: '자율', content: '사이버폭력예방교육', note: '' },
                     
+                    { id: 9, date: '2025.03.12', period: '5,6,7', domain: '진로', content: '진로 독서지도특화 및 학과별직업활동', note: '' },
+                    { id: 10, date: '2025.03.19', period: '5,6,7', domain: '진로', content: '학과특색진로활동', note: '' },
+                    { id: 11, date: '2025.03.26', period: '5,6', domain: '진로', content: '진로적성검사', note: '' },
+                    { id: 12, date: '2025.04.23', period: '5,6,7', domain: '진로', content: '진로 독서프로젝트', note: '' },
+                    
+                    { id: 13, date: '2025.03.05', period: '5,6', domain: '동아리', content: '동아리 조직', note: '' },
+                    { id: 14, date: '2025.03.19', period: '5,6', domain: '동아리', content: '수학동아리 활동', note: '' },
+                    { id: 15, date: '2025.03.26', period: '5,6,7', domain: '동아리', content: '과학실험동아리', note: '' },
+                    { id: 16, date: '2025.04.16', period: '6,7', domain: '동아리', content: '영어토론동아리', note: '' },
+                    
+                    { id: 17, date: '2025.03.12', period: '7', domain: '봉사', content: '환경정화활동', note: '(환경보호활동)' },
+                    { id: 18, date: '2025.03.26', period: '6', domain: '봉사', content: '교내도서관정리', note: '(교육활동)' },
+                    { id: 19, date: '2025.04.09', period: '7', domain: '봉사', content: '봉사소양교육', note: '(학업보충활동)' },
+                    { id: 20, date: '2025.05.21', period: '5,6,7', domain: '봉사', content: '내외 봉사의 날', note: '(아동복지활동)' }
+                ]
+            });
+
+            const activities = allActivities[selectedGrade] || [];
+            const domains = ['자율', '진로', '동아리', '봉사'];
+            const months = [
+                { value: '3', label: '3월' },
+                { value: '4', label: '4월' },
+                { value: '5', label: '5월' },
+                { value: '6', label: '6월' },
+                { value: '7', label: '7월' },
+                { value: '8', label: '8월' },
+                { value: '9', label: '9월' },
+                { value: '10', label: '10월' },
+                { value: '11', label: '11월' },
+                { value: '12', label: '12월' }
+            ];
+
+            const domainColors = {
+                '자율': 'bg-yellow-100',
+                '진로': 'bg-green-100',
+                '동아리': 'bg-purple-100',
+                '봉사': 'bg-pink-100'
+            };
+
+            // 교시 수 계산
+            const calculatePeriodHours = (period) => {
+                if (!period || period === '') return 0;
+                const periods = period.split(',').map(p => p.trim()).filter(p => p !== '');
+                return periods.length;
+            };
+
+            // 영역별 활동 필터링
+            const getActivitiesByDomain = (domain) => {
+                return activities
+                    .filter(activity => activity.domain === domain)
+                    .filter(activity => 
+                        searchTerm === '' || 
+                        activity.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        activity.date.includes(searchTerm) ||
+                        activity.note.toLowerCase().includes(searchTerm.toLowerCase())
+                    )
+                    .sort((a, b) => new Date(a.date.replace(/\./g, '-')) - new Date(b.date.replace(/\./g, '-')));
+            };
+
+            // 월별 시간표 데이터 생성
+            const generateMonthlySchedule = () => {
+                const currentActivities = allActivities[selectedGrade] || [];
+                
+                const monthActivities = currentActivities.filter(activity => {
+                    const activityMonth = activity.date.split('.')[1];
+                    const normalizedActivityMonth = parseInt(activityMonth, 10).toString();
+                    const normalizedSelectedMonth = parseInt(selectedMonth, 10).toString();
+                    return normalizedActivityMonth === normalizedSelectedMonth;
+                });
+
+                const groupedByDate = monthActivities.reduce((groups, activity) => {
+                    const date = activity.date;
+                    if (!groups[date]) {
+                        groups[date] = {};
+                    }
+                    
+                    const periods = activity.period.split(',').map(p => p.trim());
+                    periods.forEach(period => {
+                        if (!groups[date][period]) {
+                            groups[date][period] = [];
+                        }
+                        groups[date][period].push({
+                            domain: activity.domain,
+                            content: activity.content,
+                            time: calculatePeriodHours(activity.period)
+                        });
+                    });
+                    
+                    return groups;
+                }, {});
+
+                return groupedByDate;
+            };
+
+            // 활동 추가
+            const handleAddActivity = () => {
+                if (newActivity.date && newActivity.period && newActivity.content) {
+                    const currentActivities = allActivities[selectedGrade] || [];
+                    const maxId = Math.max(0, ...Object.values(allActivities).flat().map(a => a.id));
+                    const id = maxId + 1;
+                    const updatedActivities = [...currentActivities, { 
+                        ...newActivity, 
+                        id
+                    }];
+                    
+                    setAllActivities({
+                        ...allActivities,
+                        [selectedGrade]: updatedActivities
+                    });
+                    
+                    setNewActivity({ date: '', period: '', domain: '자율', content: '', note: '' });
+                    setShowAddForm(false);
+                }
+            };
+
+            // 활동 삭제
+            const handleDelete = (id) => {
+                const currentActivities = allActivities[selectedGrade] || [];
+                const updatedActivities = currentActivities.filter(activity => activity.id !== id);
+                
+                setAllActivities({
+                    ...allActivities,
+                    [selectedGrade]: updatedActivities
+                });
+            };
+
+            // CSV 템플릿 다운로드
+            const downloadTemplate = () => {
+                const templateData = [
+                    ['날짜', '시간', '교시', '영역', '내용', '비고'],
+                    ['2025.03.04', '2', '1,2', '자율', '입학식/시업식', '입학식/시업식'],
+                    ['2025.03.05', '1', '5', '자율', '학교폭력예방', ''],
+                    ['2025.03.05', '1', '6', '자율', '생명존중 교육', ''],
+                    ['2025.03.12', '3', '5,6,7', '진로', '진로탐색활동', ''],
+                    ['2025.03.19', '2', '6,7', '동아리', '동아리활동', ''],
+                    ['2025.03.26', '1', '7', '봉사', '환경정화활동', '(환경보호활동)']
+                ];
+
+                const csvContent = templateData.map(row => 
+                    row.map(cell => {
+                        const cellStr = String(cell);
+                        if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+                            return `"${cellStr.replace(/"/g, '""')}"`;
+                        }
+                        return cellStr;
+                    }).join(',')
+                ).join('\n');
+
+                const BOM = '\uFEFF';
+                const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `${selectedGrade}학년_창체활동_템플릿.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            // 현재 데이터 다운로드
+            const downloadCurrentData = () => {
+                if (activities.length === 0) {
+                    alert('다운로드할 데이터가 없습니다.');
+                    return;
+                }
+
+                const headers = ['날짜', '시간', '교시', '영역', '내용', '비고'];
+                const csvData = [
+                    headers,
+                    ...activities.map(activity => [
+                        activity.date,
+                        calculatePeriodHours(activity.period),
+                        activity.period,
+                        activity.domain,
+                        activity.content,
+                        activity.note
+                    ])
+                ];
+
+                const csvContent = csvData.map(row => 
+                    row.map(cell => {
+                        const cellStr = String(cell);
+                        if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+                            return `"${cellStr.replace(/"/g, '""')}"`;
+                        }
+                        return cellStr;
+                    }).join(',')
+                ).join('\n');
+
+                const BOM = '\uFEFF';
+                const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `${selectedGrade}학년_창체활동_현재데이터.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            // 월별 시간표 컴포넌트
+            const MonthlyScheduleView = () => {
+                const scheduleData = generateMonthlySchedule();
+                const dates = Object.keys(scheduleData).sort();
+                const periods = ['1', '2', '3', '4', '5', '6', '7'];
+
+                if (dates.length === 0) {
+                    return (
+                        <div className="text-center py-12">
+                            <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                            <h3 className="text-lg font-medium text-gray-500 mb-2">{selectedMonth}월 활동이 없습니다</h3>
+                            <p className="text-gray-400">해당 월에 등록된 창의적 체험활동이 없습니다.</p>
+                        </div>
+                    );
+                }
+
+                return (
+                    <div className="space-y-6">
+                        <div className="flex justify-between items-center">
+                            <h2 className="text-xl font-bold">
+                                {selectedGrade}학년 {selectedMonth}월 창의적 체험활동 시간표
+                            </h2>
+                            <select
+                                value={selectedMonth}
+                                onChange={(e) => setSelectedMonth(e.target.value)}
+                                className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                            >
+                                {months.map(month => (
+                                    <option key={month.value} value={month.value}>{month.label}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full border-collapse border border-gray-400 text-sm">
+                                <thead>
+                                    <tr className="bg-gray-200">
+                                        <th className="border border-gray-400 px-3 py-2 font-bold w-32">날짜</th>
+                                        {periods.map(period => (
+                                            <th key={period} className="border border-gray-400 px-3 py-2 font-bold w-24">
+                                                {period}교시
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {dates.map(date => (
+                                        <tr key={date} className="hover:bg-gray-50">
+                                            <td className="border border-gray-400 px-3 py-3 font-medium bg-gray-100 text-center">
+                                                <div className="text-sm font-bold">{date}</div>
+                                                <div className="text-xs text-gray-600">
+                                                    {new Date(date.replace(/\./g, '-')).toLocaleDateString('ko-KR', { weekday: 'short' })}
+                                                </div>
+                                            </td>
+                                            {periods.map(period => {
+                                                const periodActivities = scheduleData[date][period] || [];
+                                                return (
+                                                    <td key={period} className="border border-gray-400 px-2 py-1 text-center">
+                                                        {periodActivities.length > 0 ? (
+                                                            <div className="space-y-1">
+                                                                {periodActivities.map((activity, idx) => (
+                                                                    <div 
+                                                                        key={idx}
+                                                                        className={`px-2 py-1 rounded text-xs font-medium border ${domainColors[activity.domain]} ${
+                                                                            activity.domain === '자율' ? 'text-yellow-800' :
+                                                                            activity.domain === '진로' ? 'text-green-800' :
+                                                                            activity.domain === '동아리' ? 'text-purple-800' :
+                                                                            'text-pink-800'
+                                                                        }`}
+                                                                    >
+                                                                        <div className="font-bold">{activity.domain}</div>
+                                                                        <div className="text-xs mt-1 leading-tight">
+                                                                            {activity.content.length > 10 
+                                                                                ? `${activity.content.substring(0, 10)}...`
+                                                                                : activity.content
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-gray-300 text-xs">-</div>
+                                                        )}
+                                                    </td>
+                                                );
+                                            })}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* 월별 통계 */}
+                        <div className="mt-6 p-4 bg-gray-100 border rounded">
+                            <h3 className="font-bold mb-3">{selectedMonth}월 활동 통계</h3>
+                            <div className="grid grid-cols-4 gap-4 text-center">
+                                {domains.map(domain => {
+                                    const domainActivities = activities.filter(a => {
+                                        const activityMonth = a.date.split('.')[1];
+                                        const normalizedActivityMonth = parseInt(activityMonth, 10).toString();
+                                        const normalizedSelectedMonth = parseInt(selectedMonth, 10).toString();
+                                        return normalizedActivityMonth === normalizedSelectedMonth && a.domain === domain;
+                                    });
+                                    const totalHours = domainActivities.reduce((sum, a) => sum + calculatePeriodHours(a.period), 0);
+                                    return (
+                                        <div key={domain} className={`p-3 rounded border ${domainColors[domain]}`}>
+                                            <h4 className="font-bold">{domain}</h4>
+                                            <p className="text-sm">{domainActivities.length}개 활동</p>
+                                            <p className="text-lg font-bold">{totalHours}시간</p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // 영역별 테이블 컴포넌트
+            const DomainTable = ({ domain }) => {
+                const domainActivities = getActivitiesByDomain(domain);
+                
+                return (
+                    <div className="mb-8">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className={`text-lg font-bold p-3 rounded ${domainColors[domain]} border`}>
+                                【{domain}】
+                            </h2>
+                            <span className="text-sm text-gray-600">
+                                총 {domainActivities.length}개 활동, {domainActivities.reduce((sum, a) => sum + calculatePeriodHours(a.period), 0)}시간
+                            </span>
+                        </div>
+                        
+                        <div className="overflow-x-auto">
+                            <table className="w-full border-collapse border border-gray-400 text-sm">
+                                <thead>
+                                    <tr className={domainColors[domain]}>
+                                        <th className="border border-gray-400 px-2 py-2 font-bold w-24">날짜</th>
+                                        <th className="border border-gray-400 px-2 py-2 font-bold w-16">시간</th>
+                                        <th className="border border-gray-400 px-2 py-2 font-bold w-20">교시</th>
+                                        <th className="border border-gray-400 px-2 py-2 font-bold">내용</th>
+                                        <th className="border border-gray-400 px-2 py-2 font-bold w-32">비고</th>
+                                        <th className="border border-gray-400 px-2 py-2 font-bold w-16">작업</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {domainActivities.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="6" className="border border-gray-300 px-2 py-4 text-center text-gray-500">
+                                                등록된 활동이 없습니다.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        domainActivities.map((activity) => (
+                                            <tr key={activity.id} className="hover:bg-gray-50">
+                                                <td className="border border-gray-300 px-2 py-1 text-center">
+                                                    {activity.date}
+                                                </td>
+                                                <td className="border border-gray-300 px-2 py-1 text-center">
+                                                    {calculatePeriodHours(activity.period)}
+                                                </td>
+                                                <td className="border border-gray-300 px-2 py-1 text-center">
+                                                    {activity.period}
+                                                </td>
+                                                <td className="border border-gray-300 px-2 py-1">
+                                                    {activity.content}
+                                                </td>
+                                                <td className="border border-gray-300 px-2 py-1 text-red-600">
+                                                    {activity.note}
+                                                </td>
+                                                <td className="border border-gray-300 px-2 py-1 text-center">
+                                                    <button
+                                                        onClick={() => handleDelete(activity.id)}
+                                                        className="text-red-600 hover:text-red-800 text-xs"
+                                                    >
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
+                    <div className="bg-white rounded-lg shadow-lg mb-6 p-6">
+                        <h1 className="text-2xl font-bold text-gray-800 mb-4 text-center">
+                            2025. {selectedGrade}학년 창체 이수시간 입력 안내
+                        </h1>
+                        
+                        {/* 학년 선택 탭 */}
+                        <div className="mb-6">
+                            <div className="flex justify-center">
+                                <div className="flex border-2 border-gray-300 rounded-lg overflow-hidden bg-white">
+                                    {['1', '2', '3'].map(grade => (
+                                        <button
+                                            key={grade}
+                                            onClick={() => setSelectedGrade(grade)}
+                                            className={`px-8 py-3 font-bold text-lg transition-colors ${
+                                                selectedGrade === grade
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                                            }`}
+                                        >
+                                            {grade}학년
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 보기 모드 선택 탭 */}
+                        <div className="mb-6">
+                            <div className="flex justify-center">
+                                <div className="flex border-2 border-gray-300 rounded-lg overflow-hidden bg-white">
+                                    <button
+                                        onClick={() => setViewMode('table')}
+                                        className={`px-6 py-2 font-medium transition-colors ${
+                                            viewMode === 'table'
+                                                ? 'bg-green-600 text-white'
+                                                : 'bg-white text-gray-700 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        📋 관리 모드
+                                    </button>
+                                    <button
+                                        onClick={() => setViewMode('schedule')}
+                                        className={`px-6 py-2 font-medium transition-colors ${
+                                            viewMode === 'schedule'
+                                                ? 'bg-green-600 text-white'
+                                                : 'bg-white text-gray-700 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        📅 시간표 보기
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 조건부 렌더링 */}
+                    {viewMode === 'schedule' ? (
+                        <div className="bg-white rounded-lg shadow-lg p-6">
+                            <MonthlyScheduleView />
+                        </div>
+                    ) : (
+                        <div>
+                            {/* 상단 도구 모음 */}
+                            <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+                                <div className="flex flex-wrap gap-4 items-center justify-between">
+                                    <div className="flex gap-4 items-center">
+                                        <div className="relative">
+                                            <Search className="w-5 h-5 absolute left-3 top-3 text-gray-400" />
+                                            <input
+                                                type="text"
+                                                placeholder="활동내용 검색..."
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                                className="w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                                            />
+                                        </div>
+                                        
+                                        <button
+                                            onClick={() => setShowExcelFormat(!showExcelFormat)}
+                                            className="px-3 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
+                                        >
+                                            <AlertCircle className="w-4 h-4 inline mr-1" />
+                                            형식 안내
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* 파일 형식 안내 */}
+                                {showExcelFormat && (
+                                    <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded">
+                                        <h3 className="font-bold mb-3 text-blue-800">📊 파일 형식 안내</h3>
+                                        <div className="text-sm text-blue-700 space-y-2">
+                                            <p><strong>지원 파일:</strong> Excel (.xlsx, .xls), CSV (.csv)</p>
+                                            <p><strong>필수 컬럼:</strong> 날짜, 시간, 교시, 영역, 내용</p>
+                                            <p><strong>선택 컬럼:</strong> 비고</p>
+                                            <div className="mt-3">
+                                                <p className="font-semibold mb-2">컬럼명 예시:</p>
+                                                <div className="bg-white p-2 rounded border text-xs font-mono">
+                                                    <div className="grid grid-cols-6 gap-2 font-bold border-b pb-1">
+                                                        <span>날짜</span>
+                                                        <span>시간</span>
+                                                        <span>교시</span>
+                                                        <span>영역</span>
+                                                        <span>내용</span>
+                                                        <span>비고</span>
+                                                    </div>
+                                                    <div className="grid grid-cols-6 gap-2 pt-1">
+                                                        <span>2025.03.05</span>
+                                                        <span>2</span>
+                                                        <span>5,6</span>
+                                                        <span>자율</span>
+                                                        <span>학급특색활동</span>
+                                                        <span></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="mt-3">
+                                                <p className="font-semibold">💡 팁:</p>
+                                                <ul className="list-disc list-inside text-sm space-y-1">
+                                                    <li>영역은 '자율', '진로', '동아리', '봉사' 중 하나여야 합니다</li>
+                                                    <li>날짜 형식: 2025.03.05 또는 2025-03-05</li>
+                                                    <li>교시는 '5', '5,6', '5,6,7' 형식으로 입력</li>
+                                                    <li>시간은 숫자로 입력 (1, 2, 3 등)</li>
+                                                    <li>CSV 파일이 엑셀보다 호환성이 좋습니다</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 활동 추가 폼 */}
+                                {showAddForm && (
+                                    <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
+                                        <h3 className="font-bold mb-3">새 활동 추가</h3>
+                                        <div className="grid grid-cols-6 gap-3 mb-3">
+                                            <div>
+                                                <label className="block text-xs font-medium mb-1">날짜</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="2025.03.05"
+                                                    value={newActivity.date}
+                                                    onChange={(e) => setNewActivity({...newActivity, date: e.target.value})}
+                                                    className="w-full px-2 py-1 border rounded text-sm"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium mb-1">교시</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="5,6,7"
+                                                    value={newActivity.period}
+                                                    onChange={(e) => setNewActivity({...newActivity, period: e.target.value})}
+                                                    className="w-full px-2 py-1 border rounded text-sm"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium mb-1">영역</label>
+                                                <select
+                                                    value={newActivity.domain}
+                                                    onChange={(e) => setNewActivity({...newActivity, domain: e.target.value})}
+                                                    className="w-full px-2 py-1 border rounded text-sm"
+                                                >
+                                                    {domains.map(domain => (
+                                                        <option key={domain} value={domain}>{domain}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="col-span-3">
+                                                <label className="block text-xs font-medium mb-1">내용</label>
+                                                <input
+                                                    type="text"
+                                                    value={newActivity.content}
+                                                    onChange={(e) => setNewActivity({...newActivity, content: e.target.value})}
+                                                    className="w-full px-2 py-1 border rounded text-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3 mb-3">
+                                            <div>
+                                                <label className="block text-xs font-medium mb-1">비고</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="(학업보충활동)"
+                                                    value={newActivity.note}
+                                                    onChange={(e) => setNewActivity({...newActivity, note: e.target.value})}
+                                                    className="w-full px-2 py-1 border rounded text-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end gap-2">
+                                            <button
+                                                onClick={handleAddActivity}
+                                                className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                                            >
+                                                추가
+                                            </button>
+                                            <button
+                                                onClick={() => setShowAddForm(false)}
+                                                className="px-4 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
+                                            >
+                                                취소
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 영역별 테이블 */}
+                            <div className="space-y-8">
+                                {domains.map(domain => (
+                                    <div key={domain} className="bg-white rounded-lg shadow-lg p-6">
+                                        <DomainTable domain={domain} />
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* 하단 요약 정보 */}
+                            <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
+                                <div className="grid grid-cols-4 gap-4 text-center">
+                                    {domains.map(domain => {
+                                        const domainActivities = getActivitiesByDomain(domain);
+                                        const totalHours = domainActivities.reduce((sum, a) => sum + calculatePeriodHours(a.period), 0);
+                                        return (
+                                            <div key={domain} className={`p-3 rounded border ${domainColors[domain]}`}>
+                                                <h3 className="font-bold">{domain}</h3>
+                                                <p className="text-sm">{domainActivities.length}개 활동</p>
+                                                <p className="text-lg font-bold">{totalHours}시간</p>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>AddForm(!showAddForm)}
+                                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                                        >
+                                            <Plus className="w-4 h-4 inline mr-2" />
+                                            활동 추가
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="flex gap-2">
+                                        <button 
+                                            onClick={downloadTemplate}
+                                            className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+                                        >
+                                            <FileText className="w-4 h-4 inline mr-1" />
+                                            CSV 템플릿
+                                        </button>
+                                        <button 
+                                            onClick={downloadCurrentData}
+                                            className="px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                                        >
+                                            <Download className="w-4 h-4 inline mr-1" />
+                                            현재 데이터
+                                        </button>
+                                        <button
+                                            onClick={() => setShow
