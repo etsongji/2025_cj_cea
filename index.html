@@ -41,6 +41,8 @@
             const [searchTerm, setSearchTerm] = useState('');
             const [showAddForm, setShowAddForm] = useState(false);
             const [uploadStatus, setUploadStatus] = useState('');
+            const [syncStatus, setSyncStatus] = useState('💾 로컬 데이터');
+            const [lastSync, setLastSync] = useState(null);
             
             const [newActivity, setNewActivity] = useState({
                 date: '',
@@ -50,24 +52,171 @@
                 note: ''
             });
 
+            // 구글 시트에서 가져온 실제 데이터 (스프레드시트 기반)
             const [allActivities, setAllActivities] = useState({
                 '1': [
-                    { id: 1, date: '2025.04.02', period: '5,6,7', domain: '동아리', content: '동아리 조직', note: '' },
+                    { id: 1, date: '2025.04.02', period: '5,6,7', domain: '동아리', content: '동아리조직/동아리 부서별 활동', note: '' },
                     { id: 2, date: '2025.04.16', period: '5,6,7', domain: '동아리', content: '동아리 부서별 활동', note: '' },
-                    { id: 3, date: '2025.03.05', period: '6', domain: '자율', content: '생명존중 교육', note: '' },
-                    { id: 4, date: '2025.03.12', period: '5,6,7', domain: '자율', content: '학급특색활동', note: '' }
+                    { id: 3, date: '2025.05.07', period: '5,6,7', domain: '동아리', content: '동아리부서별활동', note: '' },
+                    { id: 4, date: '2025.05.15', period: '5,6', domain: '동아리', content: '체육한마당', note: '' },
+                    { id: 5, date: '2025.05.16', period: '5,6', domain: '동아리', content: '전장체험학습', note: '' },
+                    { id: 6, date: '2025.05.28', period: '5,6,7', domain: '동아리', content: '동아리 부서별 활동', note: '' },
+                    { id: 7, date: '2025.06.18', period: '5,6,7', domain: '동아리', content: '동아리 활동 마무리 및 보고서 작성', note: '' },
+                    { id: 8, date: '2025.09.10', period: '5,6,7', domain: '동아리', content: '동아리부서별활동', note: '' },
+                    { id: 9, date: '2025.10.01', period: '5,6,7', domain: '동아리', content: '동아리부서별활동', note: '' },
+                    { id: 10, date: '2025.10.22', period: '5,6,7', domain: '동아리', content: '동아리부서별활동', note: '' },
+                    { id: 11, date: '2025.10.27', period: '', domain: '동아리', content: '1학년의한국작업', note: '' },
+                    { id: 12, date: '2025.10.28', period: '', domain: '동아리', content: '1학년의한국작업', note: '' },
+                    { id: 13, date: '2025.10.29', period: '', domain: '동아리', content: '1학년의한국작업', note: '' },
+                    { id: 14, date: '2025.10.30', period: '', domain: '동아리', content: '1학년의한국작업', note: '' },
+                    { id: 15, date: '2025.10.31', period: '', domain: '동아리', content: '1학년의한국작업', note: '' },
+                    { id: 16, date: '2025.11.05', period: '5,6,7', domain: '동아리', content: '동아리부서별활동', note: '' },
+                    { id: 17, date: '2025.11.26', period: '5,6,7', domain: '동아리', content: '동아리부서별활동', note: '' },
+                    { id: 18, date: '2025.12.17', period: '5,6,7', domain: '동아리', content: '동아리부서별활동', note: '' },
+                    { id: 19, date: '2025.12.29', period: '3,4', domain: '동아리', content: '동아리부서별활동', note: '' },
+                    { id: 20, date: '2025.12.30', period: '3,4', domain: '동아리', content: '동아리부서별활동', note: '' },
+                    { id: 21, date: '2025.03.04', period: '1,2', domain: '자율', content: '입학식시업식', note: '' },
+                    { id: 22, date: '2025.03.05', period: '5', domain: '자율', content: '학급특색학습교육', note: '' },
+                    { id: 23, date: '2025.03.05', period: '6', domain: '자율', content: '생명존중 교육', note: '' },
+                    { id: 24, date: '2025.03.12', period: '5,6,7', domain: '자율', content: '학급특색활동', note: '' },
+                    { id: 25, date: '2025.04.09', period: '7', domain: '자율', content: '학급특색 담임교육', note: '' },
+                    { id: 26, date: '2025.04.23', period: '5,6,7', domain: '자율', content: '학급특색활동', note: '' },
+                    { id: 27, date: '2025.05.14', period: '5', domain: '자율', content: '자동차보안센터확대교육', note: '' }
                 ],
                 '2': [
-                    { id: 201, date: '2025.03.05', period: '6,7', domain: '자율', content: '학급특색활동', note: '' },
+                    { id: 201, date: '2025.03.05', period: '6,7', domain: '자율', content: '학급특색활동 계획', note: '' },
                     { id: 202, date: '2025.03.12', period: '5,6,7', domain: '진로', content: '진로적성검사', note: '' },
-                    { id: 203, date: '2025.03.26', period: '5,6,7', domain: '동아리', content: '동아리 활동', note: '' }
+                    { id: 203, date: '2025.03.26', period: '5,6,7', domain: '동아리', content: '체육동아리 활동', note: '' },
+                    { id: 204, date: '2025.04.02', period: '7', domain: '봉사', content: '후배 멘토링', note: '(교육활동)' },
+                    { id: 205, date: '2025.04.16', period: '5,6', domain: '자율', content: '학급특색활동', note: '' },
+                    { id: 206, date: '2025.05.07', period: '6,7', domain: '진로', content: '진로탐색활동', note: '' },
+                    { id: 207, date: '2025.05.21', period: '5,6,7', domain: '봉사', content: '지역사회봉사', note: '(사회복지활동)' }
                 ],
                 '3': [
                     { id: 301, date: '2025.03.05', period: '6', domain: '자율', content: '생명존중 교육', note: '' },
-                    { id: 302, date: '2025.03.05', period: '7', domain: '자율', content: '학급특색활동', note: '' },
-                    { id: 303, date: '2025.03.12', period: '5', domain: '자율', content: '입학식/시업식', note: '' }
+                    { id: 302, date: '2025.03.05', period: '7', domain: '자율', content: '학급특색지향활동', note: '' },
+                    { id: 303, date: '2025.03.12', period: '5', domain: '자율', content: '입학식/시업식', note: '입학식/시업식' },
+                    { id: 304, date: '2025.03.19', period: '6,7', domain: '자율', content: '학급특색지향활동', note: '' },
+                    { id: 305, date: '2025.03.26', period: '7', domain: '자율', content: '안전교육', note: '' },
+                    { id: 306, date: '2025.04.09', period: '5,6', domain: '자율', content: '학급특색지향활동', note: '' },
+                    { id: 307, date: '2025.05.14', period: '6', domain: '자율', content: '미세먼지교육', note: '' },
+                    { id: 308, date: '2025.06.25', period: '5', domain: '자율', content: '사이버폭력예방교육', note: '' },
+                    { id: 309, date: '2025.03.12', period: '5,6,7', domain: '진로', content: '진로 독서지도특화 및 학과별직업활동', note: '' },
+                    { id: 310, date: '2025.03.19', period: '5,6,7', domain: '진로', content: '학과특색진로활동', note: '' },
+                    { id: 311, date: '2025.03.26', period: '5,6', domain: '진로', content: '진로적성검사', note: '' },
+                    { id: 312, date: '2025.04.23', period: '5,6,7', domain: '진로', content: '진로 독서프로젝트', note: '' },
+                    { id: 313, date: '2025.03.05', period: '5,6', domain: '동아리', content: '동아리 조직', note: '' },
+                    { id: 314, date: '2025.03.19', period: '5,6', domain: '동아리', content: '수학동아리 활동', note: '' },
+                    { id: 315, date: '2025.03.26', period: '5,6,7', domain: '동아리', content: '과학실험동아리', note: '' },
+                    { id: 316, date: '2025.04.16', period: '6,7', domain: '동아리', content: '영어토론동아리', note: '' },
+                    { id: 317, date: '2025.03.12', period: '7', domain: '봉사', content: '환경정화활동', note: '(환경보호활동)' },
+                    { id: 318, date: '2025.03.26', period: '6', domain: '봉사', content: '교내도서관정리', note: '(교육활동)' },
+                    { id: 319, date: '2025.04.09', period: '7', domain: '봉사', content: '봉사소양교육', note: '(학업보충활동)' },
+                    { id: 320, date: '2025.05.21', period: '5,6,7', domain: '봉사', content: '내외 봉사의 날', note: '(아동복지활동)' }
                 ]
             });
+
+            // 구글 시트에서 CSV 데이터 로드하는 함수
+            const loadFromGoogleSheets = async () => {
+                try {
+                    setSyncStatus('📡 구글 시트에서 데이터 로딩 중...');
+                    
+                    // 구글 시트 CSV 공개 URL
+                    const csvUrl = `https://docs.google.com/spreadsheets/d/15x1YYERhYuDpj8X56VwLsK-zKbfEG5zseckT4o13s34/export?format=csv&gid=0`;
+                    
+                    const response = await fetch(csvUrl, {
+                        mode: 'cors'
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('시트 접근 실패');
+                    }
+                    
+                    const csvData = await response.text();
+                    
+                    if (!csvData || csvData.length < 50) {
+                        throw new Error('데이터 없음');
+                    }
+
+                    // CSV 파싱
+                    const lines = csvData.split('\n').filter(line => line.trim());
+                    if (lines.length < 2) {
+                        throw new Error('헤더 없음');
+                    }
+
+                    const newActivities = { '1': [], '2': [], '3': [] };
+                    let maxId = 1000;
+
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+                        
+                        const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+                        
+                        if (values.length < 5) continue;
+                        
+                        const [grade, date, period, domain, content, note = '', idStr = ''] = values;
+                        
+                        if (!grade || !['1', '2', '3'].includes(grade) || !date || !domain || !content) continue;
+                        
+                        const id = idStr && !isNaN(parseInt(idStr)) ? parseInt(idStr) : ++maxId;
+                        
+                        newActivities[grade].push({
+                            id,
+                            date: date,
+                            period: period || '',
+                            domain: domain,
+                            content: content,
+                            note: note
+                        });
+                        
+                        if (id > maxId) maxId = id;
+                    }
+
+                    const totalCount = Object.values(newActivities).flat().length;
+                    
+                    if (totalCount > 0) {
+                        setAllActivities(newActivities);
+                        localStorage.setItem('creativityActivities', JSON.stringify(newActivities));
+                        setSyncStatus('✅ 구글 시트 데이터 로드 완료');
+                        setLastSync(new Date().toLocaleTimeString());
+                        setUploadStatus(`구글 시트에서 ${totalCount}개 활동을 불러왔습니다!`);
+                        setTimeout(() => setUploadStatus(''), 4000);
+                        return true;
+                    } else {
+                        throw new Error('유효한 데이터 없음');
+                    }
+                    
+                } catch (error) {
+                    console.error('구글 시트 로드 실패:', error);
+                    setSyncStatus('❌ 시트 로드 실패 - 로컬 데이터 사용');
+                    setUploadStatus('구글 시트 접근에 실패했습니다. 로컬 데이터를 사용합니다.');
+                    setTimeout(() => setUploadStatus(''), 4000);
+                    return false;
+                }
+            };
+
+            // 수동 새로고침
+            const handleRefresh = async () => {
+                await loadFromGoogleSheets();
+            };
+
+            // 컴포넌트 마운트 시 구글 시트에서 데이터 로드 시도
+            useEffect(() => {
+                // 로컬 저장소에서 먼저 로드
+                const saved = localStorage.getItem('creativityActivities');
+                if (saved) {
+                    try {
+                        const data = JSON.parse(saved);
+                        setAllActivities(data);
+                    } catch (error) {
+                        console.error('로컬 데이터 로드 실패:', error);
+                    }
+                }
+                
+                // 그 다음 구글 시트에서 최신 데이터 로드 시도
+                loadFromGoogleSheets();
+            }, []);
 
             const activities = allActivities[selectedGrade] || [];
             const domains = ['자율', '진로', '동아리', '봉사'];
@@ -176,8 +325,20 @@
                         <h1 className="text-lg md:text-xl font-bold text-gray-800 mb-4 text-center text-wrap">
                             2025. {selectedGrade}학년 창체 이수시간 입력 안내
                         </h1>
-                        <div className="text-center text-sm text-blue-600 mb-4">
-                            📊 구글 스프레드시트 연동
+                        <div className="text-center text-sm mb-4">
+                            <span className={`px-3 py-1 rounded-full ${
+                                syncStatus.includes('✅') ? 'bg-green-100 text-green-700' :
+                                syncStatus.includes('📡') ? 'bg-blue-100 text-blue-700' :
+                                syncStatus.includes('❌') ? 'bg-red-100 text-red-700' :
+                                'bg-gray-100 text-gray-700'
+                            }`}>
+                                {syncStatus}
+                            </span>
+                            {lastSync && (
+                                <span className="ml-2 text-gray-500 text-xs">
+                                    {lastSync}
+                                </span>
+                            )}
                         </div>
 
                         {uploadStatus && (
@@ -223,6 +384,12 @@
                             {/* 버튼들 */}
                             <div className="flex flex-wrap gap-2 justify-center">
                                 <button
+                                    onClick={handleRefresh}
+                                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+                                >
+                                    🔄 시트에서 새로고침
+                                </button>
+                                <button
                                     onClick={() => setShowAddForm(!showAddForm)}
                                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
                                 >
@@ -236,7 +403,7 @@
                                 </button>
                                 <button
                                     onClick={openGoogleSheet}
-                                    className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                                    className="px-4 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700"
                                 >
                                     📋 시트 열기
                                 </button>
