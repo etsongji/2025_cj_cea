@@ -1,4 +1,10 @@
-<!DOCTYPE html>
+                                
+                                <button
+                                    onClick={() => setShowAddForm(!showAddForm)}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                                >
+                                    ➕ 활동 추가
+                                </button><!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -171,7 +177,126 @@
                 }
             };
 
-            // 구글 시트용 CSV 다운로드
+            // CSV 데이터 파싱 및 로드 함수
+            const loadDataFromCSV = async () => {
+                try {
+                    setSyncStatus('📡 구글 시트에서 데이터 로딩 중...');
+                    
+                    // 공개 CSV URL 시도
+                    const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
+                    
+                    let csvData;
+                    try {
+                        const response = await fetch(csvUrl);
+                        if (response.ok) {
+                            csvData = await response.text();
+                        } else {
+                            throw new Error('CSV 로드 실패');
+                        }
+                    } catch (error) {
+                        console.log('직접 CSV 로드 실패, 로컬 데이터 사용');
+                        setSyncStatus('💾 로컬 데이터 사용 중');
+                        return null;
+                    }
+
+                    if (!csvData || csvData.length < 50) {
+                        setSyncStatus('📝 빈 시트 - 로컬 데이터 사용');
+                        return null;
+                    }
+
+                    // CSV 파싱
+                    const lines = csvData.split('\n').filter(line => line.trim());
+                    if (lines.length < 2) {
+                        setSyncStatus('❌ 헤더 없음 - 로컬 데이터 사용');
+                        return null;
+                    }
+
+                    const activities = { '1': [], '2': [], '3': [] };
+                    let maxId = 1000; // 기존 ID와 겹치지 않도록
+
+                    // 첫 번째 줄은 헤더이므로 제외
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+                        
+                        // CSV 파싱 (쉼표로 구분, 따옴표 처리)
+                        const values = [];
+                        let current = '';
+                        let inQuotes = false;
+                        
+                        for (let j = 0; j < line.length; j++) {
+                            const char = line[j];
+                            if (char === '"') {
+                                inQuotes = !inQuotes;
+                            } else if (char === ',' && !inQuotes) {
+                                values.push(current.trim());
+                                current = '';
+                            } else {
+                                current += char;
+                            }
+                        }
+                        values.push(current.trim()); // 마지막 값 추가
+                        
+                        if (values.length < 5) continue; // 최소 5개 컬럼 필요
+                        
+                        const [grade, date, period, domain, content, note = '', idStr = ''] = values;
+                        
+                        // 유효성 검사
+                        if (!grade || !['1', '2', '3'].includes(grade.toString().trim())) continue;
+                        if (!date || !domain || !content) continue;
+                        
+                        const cleanGrade = grade.toString().trim();
+                        const id = idStr && !isNaN(parseInt(idStr)) ? parseInt(idStr) : ++maxId;
+                        
+                        const activity = {
+                            id,
+                            date: date.trim(),
+                            period: period ? period.trim() : '',
+                            domain: domain.trim(),
+                            content: content.trim(),
+                            note: note.trim(),
+                            grade: cleanGrade
+                        };
+
+                        activities[cleanGrade].push(activity);
+                        
+                        if (id > maxId) maxId = id;
+                    }
+
+                    setSyncStatus('✅ 구글 시트 데이터 로드 완료');
+                    setLastSync(new Date().toLocaleTimeString());
+                    
+                    // 로드된 데이터 개수 확인
+                    const totalCount = Object.values(activities).flat().length;
+                    console.log(`총 ${totalCount}개 활동 로드됨:`, activities);
+                    
+                    if (totalCount > 0) {
+                        return activities;
+                    } else {
+                        setSyncStatus('📝 구글 시트가 비어있음 - 로컬 데이터 사용');
+                        return null;
+                    }
+                    
+                } catch (error) {
+                    console.error('CSV 데이터 로드 실패:', error);
+                    setSyncStatus('❌ 로드 실패 - 로컬 데이터 사용');
+                    return null;
+                }
+            };
+
+            // 수동 새로고침
+            const handleManualRefresh = async () => {
+                const newData = await loadDataFromCSV();
+                if (newData) {
+                    setAllActivities(newData);
+                    localStorage.setItem('creativityActivities', JSON.stringify(newData));
+                    setUploadStatus('✅ 구글 시트에서 최신 데이터를 가져왔습니다!');
+                    setTimeout(() => setUploadStatus(''), 3000);
+                } else {
+                    setUploadStatus('⚠️ 구글 시트에서 데이터를 가져올 수 없어 로컬 데이터를 사용합니다.');
+                    setTimeout(() => setUploadStatus(''), 3000);
+                }
+            };
             const downloadForGoogleSheets = () => {
                 const headers = ['학년', '날짜', '교시', '영역', '내용', '비고', 'ID'];
                 const allRows = [headers];
@@ -226,18 +351,30 @@
                 setLastSync(new Date().toLocaleTimeString());
             }, [allActivities]);
 
-            // 로컬에서 불러오기
+            // 로컬에서 불러오기 및 초기 로드
             useEffect(() => {
-                const saved = localStorage.getItem('creativityActivities');
-                if (saved) {
-                    try {
-                        const data = JSON.parse(saved);
-                        setAllActivities(data);
-                        setSyncStatus('💾 로컬 데이터 로드됨');
-                    } catch (error) {
-                        console.error('로컬 데이터 로드 실패:', error);
+                const initializeData = async () => {
+                    // 먼저 로컬 저장소에서 불러오기
+                    const saved = localStorage.getItem('creativityActivities');
+                    if (saved) {
+                        try {
+                            const data = JSON.parse(saved);
+                            setAllActivities(data);
+                            setSyncStatus('💾 로컬 데이터 로드됨');
+                        } catch (error) {
+                            console.error('로컬 데이터 로드 실패:', error);
+                        }
                     }
-                }
+                    
+                    // 그 다음 구글 시트에서 최신 데이터 시도
+                    const sheetData = await loadDataFromCSV();
+                    if (sheetData) {
+                        setAllActivities(sheetData);
+                        localStorage.setItem('creativityActivities', JSON.stringify(sheetData));
+                    }
+                };
+                
+                initializeData();
             }, []);
 
             return (
@@ -311,10 +448,10 @@
                                 </div>
                                 
                                 <button
-                                    onClick={() => setShowAddForm(!showAddForm)}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                                    onClick={handleManualRefresh}
+                                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
                                 >
-                                    ➕ 활동 추가
+                                    🔄 구글시트에서 새로고침
                                 </button>
                             </div>
                             
