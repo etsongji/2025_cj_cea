@@ -133,45 +133,97 @@
                     }
                     
                     const csvData = await response.text();
+                    console.log('CSV 데이터 로드됨:', csvData.substring(0, 500) + '...');
                     
                     if (!csvData || csvData.length < 50) {
                         throw new Error('데이터 없음');
                     }
 
-                    // CSV 파싱
+                    // CSV 파싱 개선
                     const lines = csvData.split('\n').filter(line => line.trim());
+                    console.log('총 라인 수:', lines.length);
+                    
                     if (lines.length < 2) {
                         throw new Error('헤더 없음');
                     }
 
                     const newActivities = { '1': [], '2': [], '3': [] };
                     let maxId = 1000;
+                    let processedCount = 0;
 
+                    // 첫 번째 줄은 헤더이므로 제외
                     for (let i = 1; i < lines.length; i++) {
                         const line = lines[i].trim();
                         if (!line) continue;
                         
-                        const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+                        // CSV 파싱 개선 (따옴표와 쉼표 처리)
+                        const values = [];
+                        let current = '';
+                        let inQuotes = false;
+                        
+                        for (let j = 0; j < line.length; j++) {
+                            const char = line[j];
+                            if (char === '"') {
+                                inQuotes = !inQuotes;
+                            } else if (char === ',' && !inQuotes) {
+                                values.push(current.trim());
+                                current = '';
+                            } else {
+                                current += char;
+                            }
+                        }
+                        values.push(current.trim()); // 마지막 값 추가
                         
                         if (values.length < 5) continue;
                         
-                        const [grade, date, period, domain, content, note = '', idStr = ''] = values;
+                        let [grade, date, period, domain, content, note = '', idStr = ''] = values;
                         
-                        if (!grade || !['1', '2', '3'].includes(grade) || !date || !domain || !content) continue;
+                        // 데이터 정리
+                        grade = grade.toString().trim();
+                        date = date.trim();
+                        period = period.trim();
+                        domain = domain.trim();
+                        content = content.trim();
+                        note = note.trim();
+                        
+                        // 유효성 검사
+                        if (!grade || !['1', '2', '3'].includes(grade)) {
+                            console.log('잘못된 학년:', grade, '라인:', line);
+                            continue;
+                        }
+                        if (!date || !domain || !content) {
+                            console.log('필수 필드 누락:', { date, domain, content });
+                            continue;
+                        }
                         
                         const id = idStr && !isNaN(parseInt(idStr)) ? parseInt(idStr) : ++maxId;
                         
-                        newActivities[grade].push({
+                        const activity = {
                             id,
                             date: date,
                             period: period || '',
                             domain: domain,
                             content: content,
                             note: note
-                        });
+                        };
+
+                        newActivities[grade].push(activity);
+                        processedCount++;
                         
                         if (id > maxId) maxId = id;
+                        
+                        // 로그로 확인
+                        if (domain === '동아리' || processedCount <= 5) {
+                            console.log('처리된 활동:', activity);
+                        }
                     }
+
+                    console.log('파싱 결과:', {
+                        '1학년': newActivities['1'].length,
+                        '2학년': newActivities['2'].length, 
+                        '3학년': newActivities['3'].length,
+                        '총 개수': processedCount
+                    });
 
                     const totalCount = Object.values(newActivities).flat().length;
                     
@@ -190,8 +242,8 @@
                 } catch (error) {
                     console.error('구글 시트 로드 실패:', error);
                     setSyncStatus('❌ 시트 로드 실패 - 로컬 데이터 사용');
-                    setUploadStatus('구글 시트 접근에 실패했습니다. 로컬 데이터를 사용합니다.');
-                    setTimeout(() => setUploadStatus(''), 4000);
+                    setUploadStatus('구글 시트 접근에 실패했습니다. 브라우저 개발자 도구에서 자세한 오류를 확인하세요.');
+                    setTimeout(() => setUploadStatus(''), 6000);
                     return false;
                 }
             };
