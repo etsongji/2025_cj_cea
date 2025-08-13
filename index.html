@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>창의적 체험활동 관리 시스템</title>
+    <title>창의적 체험활동 관리 시스템 (구글 시트 연동)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -17,6 +17,16 @@
             font-size: 18px;
             color: #666;
         }
+        .save-indicator {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .sync-status {
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
 <body>
@@ -25,22 +35,30 @@
     </div>
 
     <script type="text/babel">
-        console.log('Script starting...');
-        
-        const { useState } = React;
-        console.log('React loaded:', React);
-        console.log('useState loaded:', useState);
+        const { useState, useEffect } = React;
+
+        // 구글 시트 설정
+        const GOOGLE_CONFIG = {
+            API_KEY: 'AIzaSyDEL5HMtWb8mD6A7hNADUUjlxlc57XC4UE', // 발급받은 API 키
+            SHEET_ID: '15x1YYERhYuDpj8X56VwLsK-zKbfEG5zseckT4o13s34', // 제공받은 스프레드시트 ID
+            RANGE: 'Sheet1!A:G' // 데이터 범위
+        };
+
+        // localStorage 백업용
+        const STORAGE_KEY = 'creativityActivities_backup';
 
         function App() {
-            console.log('App component loading...');
             const [selectedGrade, setSelectedGrade] = useState('3');
             const [viewMode, setViewMode] = useState('table');
             const [selectedMonth, setSelectedMonth] = useState('3');
             const [searchTerm, setSearchTerm] = useState('');
             const [showAddForm, setShowAddForm] = useState(false);
-            const [showExcelFormat, setShowExcelFormat] = useState(false);
-            const [showUploadForm, setShowUploadForm] = useState(false);
+            const [showSettings, setShowSettings] = useState(false);
             const [uploadStatus, setUploadStatus] = useState('');
+            const [syncStatus, setSyncStatus] = useState('준비중');
+            const [lastSync, setLastSync] = useState(null);
+            const [isOnline, setIsOnline] = useState(true);
+            const [apiConfig, setApiConfig] = useState(GOOGLE_CONFIG);
             
             const [newActivity, setNewActivity] = useState({
                 date: '',
@@ -51,6 +69,13 @@
             });
 
             const [allActivities, setAllActivities] = useState({
+                '1': [],
+                '2': [],
+                '3': []
+            });
+
+            // 기본 데이터
+            const getDefaultData = () => ({
                 '1': [
                     { id: 101, date: '2025.03.05', period: '5,6', domain: '자율', content: '신입생 오리엔테이션', note: '' },
                     { id: 102, date: '2025.03.19', period: '5,6', domain: '진로', content: '진로흥미검사', note: '' },
@@ -68,42 +93,168 @@
                     { id: 2, date: '2025.03.05', period: '7', domain: '자율', content: '학급특색지향활동', note: '' },
                     { id: 3, date: '2025.03.12', period: '5', domain: '자율', content: '입학식/시업식', note: '입학식/시업식' },
                     { id: 4, date: '2025.03.19', period: '6,7', domain: '자율', content: '학급특색지향활동', note: '' },
-                    { id: 5, date: '2025.03.26', period: '7', domain: '자율', content: '안전교육', note: '' },
-                    { id: 6, date: '2025.04.09', period: '5,6', domain: '자율', content: '학급특색지향활동', note: '' },
-                    { id: 7, date: '2025.05.14', period: '6', domain: '자율', content: '미세먼지교육', note: '' },
-                    { id: 8, date: '2025.06.25', period: '5', domain: '자율', content: '사이버폭력예방교육', note: '' },
-                    
-                    { id: 9, date: '2025.03.12', period: '5,6,7', domain: '진로', content: '진로 독서지도특화 및 학과별직업활동', note: '' },
-                    { id: 10, date: '2025.03.19', period: '5,6,7', domain: '진로', content: '학과특색진로활동', note: '' },
-                    { id: 11, date: '2025.03.26', period: '5,6', domain: '진로', content: '진로적성검사', note: '' },
-                    { id: 12, date: '2025.04.23', period: '5,6,7', domain: '진로', content: '진로 독서프로젝트', note: '' },
-                    
-                    { id: 13, date: '2025.03.05', period: '5,6', domain: '동아리', content: '동아리 조직', note: '' },
-                    { id: 14, date: '2025.03.19', period: '5,6', domain: '동아리', content: '수학동아리 활동', note: '' },
-                    { id: 15, date: '2025.03.26', period: '5,6,7', domain: '동아리', content: '과학실험동아리', note: '' },
-                    { id: 16, date: '2025.04.16', period: '6,7', domain: '동아리', content: '영어토론동아리', note: '' },
-                    
-                    { id: 17, date: '2025.03.12', period: '7', domain: '봉사', content: '환경정화활동', note: '(환경보호활동)' },
-                    { id: 18, date: '2025.03.26', period: '6', domain: '봉사', content: '교내도서관정리', note: '(교육활동)' },
-                    { id: 19, date: '2025.04.09', period: '7', domain: '봉사', content: '봉사소양교육', note: '(학업보충활동)' },
-                    { id: 20, date: '2025.05.21', period: '5,6,7', domain: '봉사', content: '내외 봉사의 날', note: '(아동복지활동)' }
+                    { id: 5, date: '2025.03.26', period: '7', domain: '자율', content: '안전교육', note: '' }
                 ]
             });
 
+            // 구글 시트에서 데이터 읽기
+            const loadFromGoogleSheets = async () => {
+                if (!apiConfig.API_KEY || !apiConfig.SHEET_ID) {
+                    setSyncStatus('❌ API 설정 확인 필요');
+                    return null;
+                }
+
+                try {
+                    setSyncStatus('📡 동기화 중...');
+                    const url = `https://sheets.googleapis.com/v4/spreadsheets/${apiConfig.SHEET_ID}/values/${apiConfig.RANGE}?key=${apiConfig.API_KEY}`;
+                    
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (!data.values || data.values.length === 0) {
+                        setSyncStatus('📝 빈 시트 - 헤더 추가 필요');
+                        return getDefaultData();
+                    }
+
+                    // 데이터 파싱
+                    const parsedData = parseSheetData(data.values);
+                    setSyncStatus('✅ 동기화 완료');
+                    setLastSync(new Date().toLocaleTimeString());
+                    setIsOnline(true);
+                    
+                    return parsedData;
+                } catch (error) {
+                    console.error('구글 시트 읽기 실패:', error);
+                    setSyncStatus('❌ 동기화 실패');
+                    setIsOnline(false);
+                    
+                    // 로컬 백업에서 불러오기
+                    const backup = localStorage.getItem(STORAGE_KEY);
+                    if (backup) {
+                        setSyncStatus('💾 로컬 백업 사용');
+                        return JSON.parse(backup);
+                    }
+                    
+                    return getDefaultData();
+                }
+            };
+
+            // 시트 데이터 파싱
+            const parseSheetData = (rows) => {
+                if (rows.length < 2) return getDefaultData();
+                
+                const headers = rows[0];
+                const dataRows = rows.slice(1);
+                
+                const activities = { '1': [], '2': [], '3': [] };
+                let maxId = 0;
+
+                dataRows.forEach(row => {
+                    if (row.length < 6) return;
+                    
+                    const [grade, date, period, domain, content, note, idStr] = row;
+                    const id = idStr ? parseInt(idStr) : ++maxId;
+                    
+                    if (grade && ['1', '2', '3'].includes(grade) && date && domain && content) {
+                        activities[grade].push({
+                            id,
+                            date: date || '',
+                            period: period || '5',
+                            domain: domain || '자율',
+                            content: content || '',
+                            note: note || ''
+                        });
+                        
+                        if (id > maxId) maxId = id;
+                    }
+                });
+
+                return activities;
+            };
+
+            // 구글 시트용 CSV 다운로드
+            const downloadForGoogleSheets = () => {
+                const headers = ['학년', '날짜', '교시', '영역', '내용', '비고', 'ID'];
+                const allRows = [headers];
+
+                Object.entries(allActivities).forEach(([grade, activities]) => {
+                    activities.forEach(activity => {
+                        allRows.push([
+                            grade,
+                            activity.date,
+                            activity.period,
+                            activity.domain,
+                            activity.content,
+                            activity.note,
+                            activity.id.toString()
+                        ]);
+                    });
+                });
+
+                const csvContent = allRows.map(row => 
+                    row.map(cell => {
+                        const cellStr = String(cell);
+                        if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+                            return `"${cellStr.replace(/"/g, '""')}"`;
+                        }
+                        return cellStr;
+                    }).join(',')
+                ).join('\n');
+
+                const BOM = '\uFEFF';
+                const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `창체활동_구글시트용_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                setUploadStatus('📤 구글 시트에 이 CSV 파일을 복사-붙여넣기 하세요!');
+                setTimeout(() => setUploadStatus(''), 5000);
+            };
+
+            // 초기 데이터 로드
+            useEffect(() => {
+                const initializeData = async () => {
+                    const data = await loadFromGoogleSheets();
+                    if (data) {
+                        setAllActivities(data);
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                    }
+                };
+                
+                initializeData();
+            }, [apiConfig]);
+
+            // 정기적 동기화 (30초마다)
+            useEffect(() => {
+                const interval = setInterval(async () => {
+                    if (isOnline && apiConfig.API_KEY && apiConfig.SHEET_ID) {
+                        const data = await loadFromGoogleSheets();
+                        if (data) {
+                            setAllActivities(data);
+                            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                        }
+                    }
+                }, 30000);
+
+                return () => clearInterval(interval);
+            }, [isOnline, apiConfig]);
+
+            // 로컬 변경사항 저장
+            useEffect(() => {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(allActivities));
+            }, [allActivities]);
+
             const activities = allActivities[selectedGrade] || [];
             const domains = ['자율', '진로', '동아리', '봉사'];
-            const months = [
-                { value: '3', label: '3월' },
-                { value: '4', label: '4월' },
-                { value: '5', label: '5월' },
-                { value: '6', label: '6월' },
-                { value: '7', label: '7월' },
-                { value: '8', label: '8월' },
-                { value: '9', label: '9월' },
-                { value: '10', label: '10월' },
-                { value: '11', label: '11월' },
-                { value: '12', label: '12월' }
-            ];
 
             const domainColors = {
                 '자율': 'bg-yellow-100',
@@ -132,41 +283,6 @@
                     .sort((a, b) => new Date(a.date.replace(/\./g, '-')) - new Date(b.date.replace(/\./g, '-')));
             };
 
-            // 월별 시간표 데이터 생성
-            const generateMonthlySchedule = () => {
-                const currentActivities = allActivities[selectedGrade] || [];
-                
-                const monthActivities = currentActivities.filter(activity => {
-                    const activityMonth = activity.date.split('.')[1];
-                    const normalizedActivityMonth = parseInt(activityMonth, 10).toString();
-                    const normalizedSelectedMonth = parseInt(selectedMonth, 10).toString();
-                    return normalizedActivityMonth === normalizedSelectedMonth;
-                });
-
-                const groupedByDate = monthActivities.reduce((groups, activity) => {
-                    const date = activity.date;
-                    if (!groups[date]) {
-                        groups[date] = {};
-                    }
-                    
-                    const periods = activity.period.split(',').map(p => p.trim());
-                    periods.forEach(period => {
-                        if (!groups[date][period]) {
-                            groups[date][period] = [];
-                        }
-                        groups[date][period].push({
-                            domain: activity.domain,
-                            content: activity.content,
-                            time: calculatePeriodHours(activity.period)
-                        });
-                    });
-                    
-                    return groups;
-                }, {});
-
-                return groupedByDate;
-            };
-
             // 활동 추가
             const handleAddActivity = () => {
                 if (newActivity.date && newActivity.period && newActivity.content) {
@@ -185,364 +301,89 @@
                     
                     setNewActivity({ date: '', period: '', domain: '자율', content: '', note: '' });
                     setShowAddForm(false);
+                    
+                    setUploadStatus('⚠️ 변경사항이 있습니다. "구글 시트 업데이트" 버튼을 클릭하세요!');
                 }
             };
 
             // 활동 삭제
             const handleDelete = (id) => {
-                const currentActivities = allActivities[selectedGrade] || [];
-                const updatedActivities = currentActivities.filter(activity => activity.id !== id);
-                
-                setAllActivities({
-                    ...allActivities,
-                    [selectedGrade]: updatedActivities
-                });
-            };
-
-            // CSV 템플릿 다운로드
-            const downloadTemplate = () => {
-                const templateData = [
-                    ['날짜', '시간', '교시', '영역', '내용', '비고'],
-                    ['2025.03.04', '2', '1,2', '자율', '입학식/시업식', '입학식/시업식'],
-                    ['2025.03.05', '1', '5', '자율', '학교폭력예방', ''],
-                    ['2025.03.05', '1', '6', '자율', '생명존중 교육', ''],
-                    ['2025.03.12', '3', '5,6,7', '진로', '진로탐색활동', ''],
-                    ['2025.03.19', '2', '6,7', '동아리', '동아리활동', ''],
-                    ['2025.03.26', '1', '7', '봉사', '환경정화활동', '(환경보호활동)']
-                ];
-
-                const csvContent = templateData.map(row => 
-                    row.map(cell => {
-                        const cellStr = String(cell);
-                        if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
-                            return `"${cellStr.replace(/"/g, '""')}"`;
-                        }
-                        return cellStr;
-                    }).join(',')
-                ).join('\n');
-
-                const BOM = '\uFEFF';
-                const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                const url = URL.createObjectURL(blob);
-                link.setAttribute('href', url);
-                link.setAttribute('download', `${selectedGrade}학년_창체활동_템플릿.csv`);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            };
-
-            // CSV 파일 업로드 처리
-            const handleFileUpload = (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const text = e.target.result;
-                        const lines = text.split('\n').filter(line => line.trim());
-                        
-                        if (lines.length < 2) {
-                            setUploadStatus('❌ 파일에 데이터가 없습니다.');
-                            return;
-                        }
-
-                        // 헤더 확인
-                        const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
-                        const requiredHeaders = ['날짜', '영역', '내용'];
-                        const missingHeaders = requiredHeaders.filter(h => !headers.some(header => header.includes(h)));
-                        
-                        if (missingHeaders.length > 0) {
-                            setUploadStatus(`❌ 필수 컬럼이 없습니다: ${missingHeaders.join(', ')}`);
-                            return;
-                        }
-
-                        // 데이터 파싱
-                        const newActivities = [];
-                        const currentActivities = allActivities[selectedGrade] || [];
-                        let maxId = Math.max(0, ...Object.values(allActivities).flat().map(a => a.id));
-
-                        for (let i = 1; i < lines.length; i++) {
-                            const line = lines[i].trim();
-                            if (!line) continue;
-
-                            const values = line.split(',').map(v => v.replace(/"/g, '').trim());
-                            
-                            if (values.length < headers.length) continue;
-
-                            const activity = {};
-                            headers.forEach((header, index) => {
-                                if (header.includes('날짜')) activity.date = values[index];
-                                else if (header.includes('시간')) activity.hours = values[index];
-                                else if (header.includes('교시')) activity.period = values[index];
-                                else if (header.includes('영역')) activity.domain = values[index];
-                                else if (header.includes('내용')) activity.content = values[index];
-                                else if (header.includes('비고')) activity.note = values[index] || '';
-                            });
-
-                            // 필수 필드 확인
-                            if (!activity.date || !activity.domain || !activity.content) continue;
-                            
-                            // 교시가 없으면 시간에서 추정
-                            if (!activity.period && activity.hours) {
-                                const hours = parseInt(activity.hours);
-                                if (hours === 1) activity.period = '5';
-                                else if (hours === 2) activity.period = '5,6';
-                                else if (hours === 3) activity.period = '5,6,7';
-                                else activity.period = '5';
-                            }
-                            if (!activity.period) activity.period = '5';
-
-                            // 영역 검증
-                            if (!domains.includes(activity.domain)) {
-                                activity.domain = '자율'; // 기본값
-                            }
-
-                            activity.id = ++maxId;
-                            newActivities.push(activity);
-                        }
-
-                        if (newActivities.length === 0) {
-                            setUploadStatus('❌ 유효한 데이터가 없습니다.');
-                            return;
-                        }
-
-                        // 기존 데이터에 추가
-                        const updatedActivities = [...currentActivities, ...newActivities];
-                        setAllActivities({
-                            ...allActivities,
-                            [selectedGrade]: updatedActivities
-                        });
-
-                        setUploadStatus(`✅ ${newActivities.length}개 활동이 추가되었습니다.`);
-                        setTimeout(() => {
-                            setShowUploadForm(false);
-                            setUploadStatus('');
-                        }, 2000);
-
-                    } catch (error) {
-                        setUploadStatus('❌ 파일 읽기 오류: ' + error.message);
-                    }
-                };
-                reader.readAsText(file, 'UTF-8');
-            };
-            const downloadCurrentData = () => {
-                if (activities.length === 0) {
-                    alert('다운로드할 데이터가 없습니다.');
-                    return;
+                if (confirm('이 활동을 삭제하시겠습니까?')) {
+                    const currentActivities = allActivities[selectedGrade] || [];
+                    const updatedActivities = currentActivities.filter(activity => activity.id !== id);
+                    
+                    setAllActivities({
+                        ...allActivities,
+                        [selectedGrade]: updatedActivities
+                    });
+                    
+                    setUploadStatus('⚠️ 변경사항이 있습니다. "구글 시트 업데이트" 버튼을 클릭하세요!');
                 }
-
-                const headers = ['날짜', '시간', '교시', '영역', '내용', '비고'];
-                const csvData = [
-                    headers,
-                    ...activities.map(activity => [
-                        activity.date,
-                        calculatePeriodHours(activity.period),
-                        activity.period,
-                        activity.domain,
-                        activity.content,
-                        activity.note
-                    ])
-                ];
-
-                const csvContent = csvData.map(row => 
-                    row.map(cell => {
-                        const cellStr = String(cell);
-                        if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
-                            return `"${cellStr.replace(/"/g, '""')}"`;
-                        }
-                        return cellStr;
-                    }).join(',')
-                ).join('\n');
-
-                const BOM = '\uFEFF';
-                const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                const url = URL.createObjectURL(blob);
-                link.setAttribute('href', url);
-                link.setAttribute('download', `${selectedGrade}학년_창체활동_현재데이터.csv`);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
             };
 
-            // 월별 시간표 컴포넌트
-            const MonthlyScheduleView = () => {
-                const scheduleData = generateMonthlySchedule();
-                const dates = Object.keys(scheduleData).sort();
-                const periods = ['1', '2', '3', '4', '5', '6', '7'];
-
-                if (dates.length === 0) {
-                    return (
-                        <div className="text-center py-12">
-                            <div className="text-6xl mb-4">📅</div>
-                            <h3 className="text-lg font-medium text-gray-500 mb-2">{selectedMonth}월 활동이 없습니다</h3>
-                            <p className="text-gray-400">해당 월에 등록된 창의적 체험활동이 없습니다.</p>
-                        </div>
-                    );
+            // 수동 동기화
+            const handleManualSync = async () => {
+                const data = await loadFromGoogleSheets();
+                if (data) {
+                    setAllActivities(data);
                 }
-
-                return (
-                    <div className="space-y-6">
-                        <div className="flex justify-between items-center">
-                            <h2 className="text-xl font-bold">
-                                {selectedGrade}학년 {selectedMonth}월 창의적 체험활동 시간표
-                            </h2>
-                            <select
-                                value={selectedMonth}
-                                onChange={(e) => setSelectedMonth(e.target.value)}
-                                className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-                            >
-                                {months.map(month => (
-                                    <option key={month.value} value={month.value}>{month.label}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="overflow-x-auto">
-                            <table className="w-full border-collapse border border-gray-400 text-sm">
-                                <thead>
-                                    <tr className="bg-gray-200">
-                                        <th className="border border-gray-400 px-3 py-2 font-bold w-32">날짜</th>
-                                        {periods.map(period => (
-                                            <th key={period} className="border border-gray-400 px-3 py-2 font-bold w-24">
-                                                {period}교시
-                                            </th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {dates.map(date => (
-                                        <tr key={date} className="hover:bg-gray-50">
-                                            <td className="border border-gray-400 px-3 py-3 font-medium bg-gray-100 text-center">
-                                                <div className="text-sm font-bold">{date}</div>
-                                                <div className="text-xs text-gray-600">
-                                                    {new Date(date.replace(/\./g, '-')).toLocaleDateString('ko-KR', { weekday: 'short' })}
-                                                </div>
-                                            </td>
-                                            {periods.map(period => {
-                                                const periodActivities = scheduleData[date][period] || [];
-                                                return (
-                                                    <td key={period} className="border border-gray-400 px-2 py-1 text-center">
-                                                        {periodActivities.length > 0 ? (
-                                                            <div className="space-y-1">
-                                                                {periodActivities.map((activity, idx) => (
-                                                                    <div 
-                                                                        key={idx}
-                                                                        className={`px-2 py-1 rounded text-xs font-medium border ${domainColors[activity.domain]} ${
-                                                                            activity.domain === '자율' ? 'text-yellow-800' :
-                                                                            activity.domain === '진로' ? 'text-green-800' :
-                                                                            activity.domain === '동아리' ? 'text-purple-800' :
-                                                                            'text-pink-800'
-                                                                        }`}
-                                                                    >
-                                                                        <div className="font-bold">{activity.domain}</div>
-                                                                        <div className="text-xs mt-1 leading-tight">
-                                                                            {activity.content.length > 10 
-                                                                                ? `${activity.content.substring(0, 10)}...`
-                                                                                : activity.content
-                                                                            }
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        ) : (
-                                                            <div className="text-gray-300 text-xs">-</div>
-                                                        )}
-
-                                {/* CSV 업로드 폼 */}
-                                {showUploadForm && (
-                                    <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded">
-                                        <h3 className="font-bold mb-3">CSV 파일 업로드</h3>
-                                        <div className="space-y-3">
-                                            <div>
-                                                <input
-                                                    type="file"
-                                                    accept=".csv,.xlsx,.xls"
-                                                    onChange={handleFileUpload}
-                                                    className="w-full px-3 py-2 border border-purple-300 rounded-md focus:ring-2 focus:ring-purple-500"
-                                                />
-                                                <p className="text-xs text-purple-600 mt-1">
-                                                    지원 형식: CSV, Excel (.xlsx, .xls)
-                                                </p>
-                                            </div>
-                                            
-                                            {uploadStatus && (
-                                                <div className={`p-2 rounded text-sm ${
-                                                    uploadStatus.includes('✅') 
-                                                        ? 'bg-green-100 text-green-700 border border-green-200' 
-                                                        : 'bg-red-100 text-red-700 border border-red-200'
-                                                }`}>
-                                                    {uploadStatus}
-                                                </div>
-                                            )}
-
-                                            <div className="text-xs text-purple-600 space-y-1">
-                                                <p><strong>📋 업로드 규칙:</strong></p>
-                                                <ul className="list-disc list-inside space-y-1 ml-2">
-                                                    <li>첫 번째 행은 헤더여야 합니다</li>
-                                                    <li>필수 컬럼: 날짜, 영역, 내용</li>
-                                                    <li>선택 컬럼: 시간, 교시, 비고</li>
-                                                    <li>영역은 '자율', '진로', '동아리', '봉사' 중 하나</li>
-                                                    <li>기존 데이터에 추가됩니다 (덮어쓰지 않음)</li>
-                                                </ul>
-                                            </div>
-
-                                            <div className="flex justify-end gap-2">
-                                                <button
-                                                    onClick={() => setShowUploadForm(false)}
-                                                    className="px-4 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
-                                                >
-                                                    닫기
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                                                    </td>
-                                                );
-                                            })}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* 월별 통계 */}
-                        <div className="mt-6 p-4 bg-gray-100 border rounded">
-                            <h3 className="font-bold mb-3">{selectedMonth}월 활동 통계</h3>
-                            <div className="grid grid-cols-4 gap-4 text-center">
-                                {domains.map(domain => {
-                                    const domainActivities = activities.filter(a => {
-                                        const activityMonth = a.date.split('.')[1];
-                                        const normalizedActivityMonth = parseInt(activityMonth, 10).toString();
-                                        const normalizedSelectedMonth = parseInt(selectedMonth, 10).toString();
-                                        return normalizedActivityMonth === normalizedSelectedMonth && a.domain === domain;
-                                    });
-                                    const totalHours = domainActivities.reduce((sum, a) => sum + calculatePeriodHours(a.period), 0);
-                                    return (
-                                        <div key={domain} className={`p-3 rounded border ${domainColors[domain]}`}>
-                                            <h4 className="font-bold">{domain}</h4>
-                                            <p className="text-sm">{domainActivities.length}개 활동</p>
-                                            <p className="text-lg font-bold">{totalHours}시간</p>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </div>
-                );
             };
+
+            // API 설정 저장
+            const handleSaveApiConfig = () => {
+                setApiConfig({ ...apiConfig });
+                localStorage.setItem('googleSheetsConfig', JSON.stringify(apiConfig));
+                setShowSettings(false);
+                loadFromGoogleSheets();
+            };
+
+            // API 설정 불러오기
+            useEffect(() => {
+                const saved = localStorage.getItem('googleSheetsConfig');
+                if (saved) {
+                    setApiConfig(JSON.parse(saved));
+                }
+            }, []);
 
             return (
                 <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
                     <div className="bg-white rounded-lg shadow-lg mb-6 p-6">
                         <h1 className="text-2xl font-bold text-gray-800 mb-4 text-center">
                             2025. {selectedGrade}학년 창체 이수시간 입력 안내
+                            <span className="text-sm text-blue-600 block mt-1">📊 구글 스프레드시트 연동</span>
                         </h1>
+                        
+                        {/* 동기화 상태 표시 */}
+                        <div className="text-center mb-4">
+                            <div className="flex justify-center items-center gap-4 text-sm flex-wrap">
+                                <span className={`px-3 py-1 rounded-full sync-status ${
+                                    syncStatus.includes('✅') ? 'bg-green-100 text-green-700' :
+                                    syncStatus.includes('📡') ? 'bg-blue-100 text-blue-700 save-indicator' :
+                                    syncStatus.includes('❌') ? 'bg-red-100 text-red-700' :
+                                    'bg-yellow-100 text-yellow-700'
+                                }`}>
+                                    {syncStatus}
+                                </span>
+                                {lastSync && (
+                                    <span className="text-gray-500">
+                                        마지막 동기화: {lastSync}
+                                    </span>
+                                )}
+                                <span className={`w-3 h-3 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`} 
+                                      title={isOnline ? '온라인' : '오프라인'}></span>
+                            </div>
+                        </div>
+
+                        {/* 상태 메시지 */}
+                        {uploadStatus && (
+                            <div className={`text-center mb-4 p-3 rounded ${
+                                uploadStatus.includes('✅') ? 'bg-green-100 text-green-700' :
+                                uploadStatus.includes('⚠️') ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-blue-100 text-blue-700'
+                            }`}>
+                                {uploadStatus}
+                            </div>
+                        )}
                         
                         {/* 학년 선택 탭 */}
                         <div className="mb-6">
@@ -564,305 +405,316 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        {/* 보기 모드 선택 탭 */}
-                        <div className="mb-6">
-                            <div className="flex justify-center">
-                                <div className="flex border-2 border-gray-300 rounded-lg overflow-hidden bg-white">
+                    {/* 상단 도구 모음 */}
+                    <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+                        <div className="flex flex-wrap gap-4 items-center justify-between">
+                            <div className="flex gap-4 items-center flex-wrap">
+                                <div className="relative">
+                                    <span className="absolute left-3 top-3 text-gray-400">🔍</span>
+                                    <input
+                                        type="text"
+                                        placeholder="활동내용 검색..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                                
+                                <button
+                                    onClick={() => setShowAddForm(!showAddForm)}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                                >
+                                    ➕ 활동 추가
+                                </button>
+
+                                <button
+                                    onClick={handleManualSync}
+                                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                                    disabled={!isOnline}
+                                >
+                                    🔄 새로고침
+                                </button>
+                            </div>
+                            
+                            <div className="flex gap-2 flex-wrap">
+                                <button 
+                                    onClick={downloadForGoogleSheets}
+                                    className="px-3 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700 transition-colors"
+                                >
+                                    📊 구글 시트 업데이트
+                                </button>
+                                <button
+                                    onClick={() => setShowSettings(!showSettings)}
+                                    className="px-3 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
+                                >
+                                    ⚙️ API 설정
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* API 설정 폼 */}
+                        {showSettings && (
+                            <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded">
+                                <h3 className="font-bold mb-3">📊 구글 스프레드시트 연동 설정</h3>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Google API Key</label>
+                                        <input
+                                            type="password"
+                                            placeholder="Google Cloud Console에서 발급받은 API Key"
+                                            value={apiConfig.API_KEY}
+                                            onChange={(e) => setApiConfig({...apiConfig, API_KEY: e.target.value})}
+                                            className="w-full px-3 py-2 border rounded-md text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">스프레드시트 ID</label>
+                                        <input
+                                            type="text"
+                                            placeholder="스프레드시트 URL에서 추출한 ID"
+                                            value={apiConfig.SHEET_ID}
+                                            onChange={(e) => setApiConfig({...apiConfig, SHEET_ID: e.target.value})}
+                                            className="w-full px-3 py-2 border rounded-md text-sm"
+                                        />
+                                    </div>
+                                    <div className="text-xs text-gray-600 space-y-1">
+                                        <p><strong>현재 설정:</strong></p>
+                                        <ul className="list-disc list-inside space-y-1 ml-2">
+                                            <li>API Key: {apiConfig.API_KEY ? '설정됨 ✅' : '미설정 ❌'}</li>
+                                            <li>스프레드시트 ID: {apiConfig.SHEET_ID ? '설정됨 ✅' : '미설정 ❌'}</li>
+                                        </ul>
+                                        <div className="mt-2 p-2 bg-blue-50 rounded">
+                                            <p><strong>📋 스프레드시트 헤더 설정:</strong></p>
+                                            <p className="text-xs">A1부터 G1까지: 학년, 날짜, 교시, 영역, 내용, 비고, ID</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end gap-2">
+                                        <button
+                                            onClick={handleSaveApiConfig}
+                                            className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                                        >
+                                            저장
+                                        </button>
+                                        <button
+                                            onClick={() => setShowSettings(false)}
+                                            className="px-4 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
+                                        >
+                                            취소
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 활동 추가 폼 */}
+                        {showAddForm && (
+                            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
+                                <h3 className="font-bold mb-3">새 활동 추가</h3>
+                                <div className="grid grid-cols-6 gap-3 mb-3">
+                                    <div>
+                                        <label className="block text-xs font-medium mb-1">날짜</label>
+                                        <input
+                                            type="text"
+                                            placeholder="2025.03.05"
+                                            value={newActivity.date}
+                                            onChange={(e) => setNewActivity({...newActivity, date: e.target.value})}
+                                            className="w-full px-2 py-1 border rounded text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium mb-1">교시</label>
+                                        <input
+                                            type="text"
+                                            placeholder="5,6,7"
+                                            value={newActivity.period}
+                                            onChange={(e) => setNewActivity({...newActivity, period: e.target.value})}
+                                            className="w-full px-2 py-1 border rounded text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium mb-1">영역</label>
+                                        <select
+                                            value={newActivity.domain}
+                                            onChange={(e) => setNewActivity({...newActivity, domain: e.target.value})}
+                                            className="w-full px-2 py-1 border rounded text-sm"
+                                        >
+                                            {domains.map(domain => (
+                                                <option key={domain} value={domain}>{domain}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="col-span-3">
+                                        <label className="block text-xs font-medium mb-1">내용</label>
+                                        <input
+                                            type="text"
+                                            value={newActivity.content}
+                                            onChange={(e) => setNewActivity({...newActivity, content: e.target.value})}
+                                            className="w-full px-2 py-1 border rounded text-sm"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 mb-3">
+                                    <div>
+                                        <label className="block text-xs font-medium mb-1">비고</label>
+                                        <input
+                                            type="text"
+                                            placeholder="(학업보충활동)"
+                                            value={newActivity.note}
+                                            onChange={(e) => setNewActivity({...newActivity, note: e.target.value})}
+                                            className="w-full px-2 py-1 border rounded text-sm"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex justify-end gap-2">
                                     <button
-                                        onClick={() => setViewMode('table')}
-                                        className={`px-6 py-2 font-medium transition-colors ${
-                                            viewMode === 'table'
-                                                ? 'bg-green-600 text-white'
-                                                : 'bg-white text-gray-700 hover:bg-gray-50'
-                                        }`}
+                                        onClick={handleAddActivity}
+                                        className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700"
                                     >
-                                        📋 관리 모드
+                                        추가
                                     </button>
                                     <button
-                                        onClick={() => setViewMode('schedule')}
-                                        className={`px-6 py-2 font-medium transition-colors ${
-                                            viewMode === 'schedule'
-                                                ? 'bg-green-600 text-white'
-                                                : 'bg-white text-gray-700 hover:bg-gray-50'
-                                        }`}
+                                        onClick={() => setShowAddForm(false)}
+                                        className="px-4 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
                                     >
-                                        📅 시간표 보기
+                                        취소
                                     </button>
                                 </div>
                             </div>
+                        )}
+                    </div>
+
+                    {/* 메인 콘텐츠 */}
+                    <div className="space-y-8">
+                        {domains.map(domain => {
+                            const domainActivities = getActivitiesByDomain(domain);
+                            return (
+                                <div key={domain} className="bg-white rounded-lg shadow-lg p-6">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h2 className={`text-lg font-bold p-3 rounded ${domainColors[domain]} border`}>
+                                            【{domain}】
+                                        </h2>
+                                        <span className="text-sm text-gray-600">
+                                            총 {domainActivities.length}개 활동, {domainActivities.reduce((sum, a) => sum + calculatePeriodHours(a.period), 0)}시간
+                                        </span>
+                                    </div>
+                                    
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full border-collapse border border-gray-400 text-sm">
+                                            <thead>
+                                                <tr className={domainColors[domain]}>
+                                                    <th className="border border-gray-400 px-2 py-2 font-bold w-24">날짜</th>
+                                                    <th className="border border-gray-400 px-2 py-2 font-bold w-16">시간</th>
+                                                    <th className="border border-gray-400 px-2 py-2 font-bold w-20">교시</th>
+                                                    <th className="border border-gray-400 px-2 py-2 font-bold">내용</th>
+                                                    <th className="border border-gray-400 px-2 py-2 font-bold w-32">비고</th>
+                                                    <th className="border border-gray-400 px-2 py-2 font-bold w-16">작업</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {domainActivities.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan="6" className="border border-gray-300 px-2 py-4 text-center text-gray-500">
+                                                            등록된 활동이 없습니다.
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    domainActivities.map((activity) => (
+                                                        <tr key={activity.id} className="hover:bg-gray-50">
+                                                            <td className="border border-gray-300 px-2 py-1 text-center">
+                                                                {activity.date}
+                                                            </td>
+                                                            <td className="border border-gray-300 px-2 py-1 text-center">
+                                                                {calculatePeriodHours(activity.period)}
+                                                            </td>
+                                                            <td className="border border-gray-300 px-2 py-1 text-center">
+                                                                {activity.period}
+                                                            </td>
+                                                            <td className="border border-gray-300 px-2 py-1">
+                                                                {activity.content}
+                                                            </td>
+                                                            <td className="border border-gray-300 px-2 py-1 text-red-600">
+                                                                {activity.note}
+                                                            </td>
+                                                            <td className="border border-gray-300 px-2 py-1 text-center">
+                                                                <button
+                                                                    onClick={() => handleDelete(activity.id)}
+                                                                    className="text-red-600 hover:text-red-800 text-xs"
+                                                                    title="삭제"
+                                                                >
+                                                                    ❌
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* 하단 요약 정보 */}
+                    <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
+                        <div className="grid grid-cols-4 gap-4 text-center">
+                            {domains.map(domain => {
+                                const domainActivities = getActivitiesByDomain(domain);
+                                const totalHours = domainActivities.reduce((sum, a) => sum + calculatePeriodHours(a.period), 0);
+                                return (
+                                    <div key={domain} className={`p-3 rounded border ${domainColors[domain]}`}>
+                                        <h3 className="font-bold">{domain}</h3>
+                                        <p className="text-sm">{domainActivities.length}개 활동</p>
+                                        <p className="text-lg font-bold">{totalHours}시간</p>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 
-                    {/* 조건부 렌더링 */}
-                    {viewMode === 'schedule' ? (
-                        <div className="bg-white rounded-lg shadow-lg p-6">
-                            <MonthlyScheduleView />
-                        </div>
-                    ) : (
-                        <div>
-                            {/* 상단 도구 모음 */}
-                            <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-                                <div className="flex flex-wrap gap-4 items-center justify-between">
-                                    <div className="flex gap-4 items-center">
-                                        <div className="relative">
-                                            <span className="absolute left-3 top-3 text-gray-400">🔍</span>
-                                            <input
-                                                type="text"
-                                                placeholder="활동내용 검색..."
-                                                value={searchTerm}
-                                                onChange={(e) => setSearchTerm(e.target.value)}
-                                                className="w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-                                            />
-                                        </div>
-                                        
-                                        <button
-                                            onClick={() => setShowAddForm(!showAddForm)}
-                                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                                        >
-                                            ➕ 활동 추가
-                                        </button>
-
-                                        <button
-                                            onClick={() => setShowUploadForm(!showUploadForm)}
-                                            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-                                        >
-                                            📤 CSV 업로드
-                                        </button>
-                                    </div>
-                                    
-                                    <div className="flex gap-2">
-                                        <button 
-                                            onClick={downloadTemplate}
-                                            className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
-                                        >
-                                            📄 CSV 템플릿
-                                        </button>
-                                        <button 
-                                            onClick={downloadCurrentData}
-                                            className="px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                                        >
-                                            📥 현재 데이터
-                                        </button>
-                                        <button
-                                            onClick={() => setShowExcelFormat(!showExcelFormat)}
-                                            className="px-3 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
-                                        >
-                                            ℹ️ 형식 안내
-                                        </button>
-                                    </div>
+                    {/* 구글 시트 연동 안내 */}
+                    <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+                        <h3 className="font-bold mb-3 text-blue-800">📊 구글 스프레드시트 연동 안내</h3>
+                        <div className="text-sm text-blue-700 space-y-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <h4 className="font-semibold mb-2">🔄 실시간 동기화</h4>
+                                    <ul className="list-disc list-inside space-y-1 text-xs">
+                                        <li>30초마다 자동으로 구글 시트에서 데이터 확인</li>
+                                        <li>다른 교사가 시트를 수정하면 자동 반영</li>
+                                        <li>"새로고침" 버튼으로 수동 동기화 가능</li>
+                                    </ul>
                                 </div>
-
-                                {/* 파일 형식 안내 */}
-                                {showExcelFormat && (
-                                    <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded">
-                                        <h3 className="font-bold mb-3 text-blue-800">📊 파일 형식 안내</h3>
-                                        <div className="text-sm text-blue-700 space-y-2">
-                                            <p><strong>지원 파일:</strong> Excel (.xlsx, .xls), CSV (.csv)</p>
-                                            <p><strong>필수 컬럼:</strong> 날짜, 시간, 교시, 영역, 내용</p>
-                                            <p><strong>선택 컬럼:</strong> 비고</p>
-                                            <div className="mt-3">
-                                                <p className="font-semibold mb-2">컬럼명 예시:</p>
-                                                <div className="bg-white p-2 rounded border text-xs font-mono">
-                                                    <div className="grid grid-cols-6 gap-2 font-bold border-b pb-1">
-                                                        <span>날짜</span>
-                                                        <span>시간</span>
-                                                        <span>교시</span>
-                                                        <span>영역</span>
-                                                        <span>내용</span>
-                                                        <span>비고</span>
-                                                    </div>
-                                                    <div className="grid grid-cols-6 gap-2 pt-1">
-                                                        <span>2025.03.05</span>
-                                                        <span>2</span>
-                                                        <span>5,6</span>
-                                                        <span>자율</span>
-                                                        <span>학급특색활동</span>
-                                                        <span></span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="mt-3">
-                                                <p className="font-semibold">💡 업로드 팁:</p>
-                                                <ul className="list-disc list-inside text-sm space-y-1">
-                                                    <li>영역은 '자율', '진로', '동아리', '봉사' 중 하나여야 합니다</li>
-                                                    <li>날짜 형식: 2025.03.05 또는 2025-03-05</li>
-                                                    <li>교시는 '5', '5,6', '5,6,7' 형식으로 입력</li>
-                                                    <li>시간은 숫자로 입력 (1, 2, 3 등)</li>
-                                                    <li>CSV 파일이 엑셀보다 호환성이 좋습니다</li>
-                                                    <li>기존 데이터에 추가됩니다 (덮어쓰지 않음)</li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* 활동 추가 폼 */}
-                                {showAddForm && (
-                                    <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-                                        <h3 className="font-bold mb-3">새 활동 추가</h3>
-                                        <div className="grid grid-cols-6 gap-3 mb-3">
-                                            <div>
-                                                <label className="block text-xs font-medium mb-1">날짜</label>
-                                                <input
-                                                    type="text"
-                                                    placeholder="2025.03.05"
-                                                    value={newActivity.date}
-                                                    onChange={(e) => setNewActivity({...newActivity, date: e.target.value})}
-                                                    className="w-full px-2 py-1 border rounded text-sm"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-medium mb-1">교시</label>
-                                                <input
-                                                    type="text"
-                                                    placeholder="5,6,7"
-                                                    value={newActivity.period}
-                                                    onChange={(e) => setNewActivity({...newActivity, period: e.target.value})}
-                                                    className="w-full px-2 py-1 border rounded text-sm"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-medium mb-1">영역</label>
-                                                <select
-                                                    value={newActivity.domain}
-                                                    onChange={(e) => setNewActivity({...newActivity, domain: e.target.value})}
-                                                    className="w-full px-2 py-1 border rounded text-sm"
-                                                >
-                                                    {domains.map(domain => (
-                                                        <option key={domain} value={domain}>{domain}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                            <div className="col-span-3">
-                                                <label className="block text-xs font-medium mb-1">내용</label>
-                                                <input
-                                                    type="text"
-                                                    value={newActivity.content}
-                                                    onChange={(e) => setNewActivity({...newActivity, content: e.target.value})}
-                                                    className="w-full px-2 py-1 border rounded text-sm"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-3 mb-3">
-                                            <div>
-                                                <label className="block text-xs font-medium mb-1">비고</label>
-                                                <input
-                                                    type="text"
-                                                    placeholder="(학업보충활동)"
-                                                    value={newActivity.note}
-                                                    onChange={(e) => setNewActivity({...newActivity, note: e.target.value})}
-                                                    className="w-full px-2 py-1 border rounded text-sm"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="flex justify-end gap-2">
-                                            <button
-                                                onClick={handleAddActivity}
-                                                className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                                            >
-                                                추가
-                                            </button>
-                                            <button
-                                                onClick={() => setShowAddForm(false)}
-                                                className="px-4 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
-                                            >
-                                                취소
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* 영역별 테이블 */}
-                            <div className="space-y-8">
-                                {domains.map(domain => {
-                                    const domainActivities = getActivitiesByDomain(domain);
-                                    return (
-                                        <div key={domain} className="bg-white rounded-lg shadow-lg p-6">
-                                            <div className="flex justify-between items-center mb-4">
-                                                <h2 className={`text-lg font-bold p-3 rounded ${domainColors[domain]} border`}>
-                                                    【{domain}】
-                                                </h2>
-                                                <span className="text-sm text-gray-600">
-                                                    총 {domainActivities.length}개 활동, {domainActivities.reduce((sum, a) => sum + calculatePeriodHours(a.period), 0)}시간
-                                                </span>
-                                            </div>
-                                            
-                                            <div className="overflow-x-auto">
-                                                <table className="w-full border-collapse border border-gray-400 text-sm">
-                                                    <thead>
-                                                        <tr className={domainColors[domain]}>
-                                                            <th className="border border-gray-400 px-2 py-2 font-bold w-24">날짜</th>
-                                                            <th className="border border-gray-400 px-2 py-2 font-bold w-16">시간</th>
-                                                            <th className="border border-gray-400 px-2 py-2 font-bold w-20">교시</th>
-                                                            <th className="border border-gray-400 px-2 py-2 font-bold">내용</th>
-                                                            <th className="border border-gray-400 px-2 py-2 font-bold w-32">비고</th>
-                                                            <th className="border border-gray-400 px-2 py-2 font-bold w-16">작업</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {domainActivities.length === 0 ? (
-                                                            <tr>
-                                                                <td colSpan="6" className="border border-gray-300 px-2 py-4 text-center text-gray-500">
-                                                                    등록된 활동이 없습니다.
-                                                                </td>
-                                                            </tr>
-                                                        ) : (
-                                                            domainActivities.map((activity) => (
-                                                                <tr key={activity.id} className="hover:bg-gray-50">
-                                                                    <td className="border border-gray-300 px-2 py-1 text-center">
-                                                                        {activity.date}
-                                                                    </td>
-                                                                    <td className="border border-gray-300 px-2 py-1 text-center">
-                                                                        {calculatePeriodHours(activity.period)}
-                                                                    </td>
-                                                                    <td className="border border-gray-300 px-2 py-1 text-center">
-                                                                        {activity.period}
-                                                                    </td>
-                                                                    <td className="border border-gray-300 px-2 py-1">
-                                                                        {activity.content}
-                                                                    </td>
-                                                                    <td className="border border-gray-300 px-2 py-1 text-red-600">
-                                                                        {activity.note}
-                                                                    </td>
-                                                                    <td className="border border-gray-300 px-2 py-1 text-center">
-                                                                        <button
-                                                                            onClick={() => handleDelete(activity.id)}
-                                                                            className="text-red-600 hover:text-red-800 text-xs"
-                                                                        >
-                                                                            ❌
-                                                                        </button>
-                                                                    </td>
-                                                                </tr>
-                                                            ))
-                                                        )}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-
-                            {/* 하단 요약 정보 */}
-                            <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
-                                <div className="grid grid-cols-4 gap-4 text-center">
-                                    {domains.map(domain => {
-                                        const domainActivities = getActivitiesByDomain(domain);
-                                        const totalHours = domainActivities.reduce((sum, a) => sum + calculatePeriodHours(a.period), 0);
-                                        return (
-                                            <div key={domain} className={`p-3 rounded border ${domainColors[domain]}`}>
-                                                <h3 className="font-bold">{domain}</h3>
-                                                <p className="text-sm">{domainActivities.length}개 활동</p>
-                                                <p className="text-lg font-bold">{totalHours}시간</p>
-                                            </div>
-                                        );
-                                    })}
+                                <div>
+                                    <h4 className="font-semibold mb-2">📝 데이터 업데이트</h4>
+                                    <ul className="list-disc list-inside space-y-1 text-xs">
+                                        <li>활동 추가/삭제 후 "구글 시트 업데이트" 클릭</li>
+                                        <li>CSV 파일이 다운로드됩니다</li>
+                                        <li>구글 시트에 복사-붙여넣기로 업데이트</li>
+                                    </ul>
                                 </div>
                             </div>
+                            <div className="mt-4 p-3 bg-blue-100 rounded">
+                                <p className="font-semibold">💡 사용 팁:</p>
+                                <p className="text-xs mt-1">
+                                    구글 시트를 북마크해두고, 모든 교사가 같은 시트를 공유하여 사용하세요. 
+                                    입력 권한은 담당자만, 조회 권한은 모든 교사에게 부여하는 것을 권장합니다.
+                                </p>
+                            </div>
+                            <div className="mt-4 p-3 bg-green-100 rounded">
+                                <p className="font-semibold">✅ 설정 완료 체크리스트:</p>
+                                <ol className="list-decimal list-inside text-xs mt-1 space-y-1">
+                                    <li>Google Cloud Console에서 Sheets API 활성화 ✅</li>
+                                    <li>API Key 발급 완료 ✅</li>
+                                    <li>구글 스프레드시트 생성 및 공유 설정</li>
+                                    <li>스프레드시트에 헤더 입력 (학년, 날짜, 교시, 영역, 내용, 비고, ID)</li>
+                                    <li>웹 앱에서 API 설정 완료</li>
+                                </ol>
+                            </div>
                         </div>
-                    )}
+                    </div>
                 </div>
             );
         }
